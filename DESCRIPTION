@@ -1,0 +1,18 @@
+Package: WatershedTools
+Title: Tools for watershed analysis
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Matthew",
+           family = "Talluto",
+           role = c("aut", "cre"),
+           email = "mtalluto@gmail.com")
+Description: This is a wrapper around various GRASS GIS 7.4 functions for conducting watershed analyses. An installation of GRASS is required prior to using this package.
+License: MIT + file "Licence"
+Encoding: UTF-8
+LazyData: true
+Imports:
+	rgrass7
+Suggests: 
+    testthat
+SystemRequirements:
+	GRASS GIS 7.4

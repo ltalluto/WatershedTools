@@ -1,0 +1,26 @@
+[general]
+creator=R package 'raster'
+created=2018-11-29 11:48:11
+[georeference]
+nrows=1080
+ncols=1080
+xmin=5.6
+ymin=45.1
+xmax=5.9
+ymax=45.4
+projection=+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0
+[data]
+datatype=FLT4S
+byteorder=little
+nbands=1
+bandorder=BIL
+categorical=FALSE
+minvalue=179
+maxvalue=2184
+nodatavalue=-3.4e+38
+[legend]
+legendtype=
+values=
+color=
+[description]
+layername=N045E005_AVE_DSM
