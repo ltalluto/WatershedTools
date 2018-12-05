@@ -19,7 +19,7 @@ rasterToSPDF <- function(x)
 #'
 #' @param layer A [raster::raster] object (recommended); or any other object which has `extent()` and `proj4string()` methods defined.
 #' @param gisBase character; the location of the GRASS installation (see `details`)
-#' @param layer_name NA or character; if NA (the default), the layer will not be added to the grass session, otherwise it will be appended with this name.
+#' @param layerName NA or character; if NA (the default), the layer will not be added to the grass session, otherwise it will be appended with this name.
 #' @param home Location to write GRASS settings, `details`.
 #' @param gisDbase Location to write GRASS GIS datasets; see `details`.
 #' @param location Grass location name
@@ -33,18 +33,16 @@ rasterToSPDF <- function(x)
 #' 
 #' by default `override` will be TRUE if home and gisDbase are set to their defaults, otherwise FALSE. If TRUE, the new session will override any existing grass session (possibly damaging/overwriting existing files). It is an error if override is FALSE and there is an already running session.
 #' @return An S3 [GrassSession] object
-GrassSession <- function(layer, gisBase, layer_name = NA, home = tempdir(), gisDbase = home,location = 'NSmetabolism', mapset = 'PERMANENT', override)
+GrassSession <- function(layer, gisBase, layerName = NA, home = tempdir(), gisDbase = home,
+	location = 'NSmetabolism', mapset = 'PERMANENT', override)
 {
 	if(missing(gisBase)) 
 		gisBase <- system2("grass74", args=c("--config path"), stdout=TRUE)
 
-	if(missing(override))
-	{
-		if(home == gisDbase  && home == tempdir())
-		{
+	if(missing(override)) {
+		if(home == gisDbase  && home == tempdir()) {
 			override <- TRUE
-		} else
-			override <- FALSE
+		} else override <- FALSE
 	}
 
 	gs <- list()
@@ -69,8 +67,7 @@ GrassSession <- function(layer, gisBase, layer_name = NA, home = tempdir(), gisD
 
 	class(gs) <- c("GrassSession", class(gs))
 
-	if(!is.na(layer_name))
-		gs <- GSAddRaster(layer, layer_name, gs)
+	if(!is.na(layerName)) gs <- GSAddRaster(layer, layerName, gs)
 
 	return(gs)
 }
@@ -86,18 +83,57 @@ print.GrassSession <- function(x)
 
 #' Add a RasterLayer to a grass session and return the modified session
 #' @param x A [raster::raster] object or a [sp::SpatialGridDataFrame]
-#' @param grass_session A [GrassSession] object
+#' @param gs A [GrassSession] object
 #' @param layer_name character; the name of the layer to add to grass.
-#'
+#' 
 #' @return An S3 [GrassSession] object
-GSAddRaster <- function(x, layer_name, grass_session, overwrite = TRUE)
+GSAddRaster <- function(x, layerName, gs, overwrite = TRUE)
 {
-	if("RasterLayer" %in% class(x))
-		xSPDF <- rasterToSPDF(x)
+
+	if("RasterLayer" %in% class(x)) {
+		x <- rasterToSPDF(x)
+	}
 	flags <- NULL
 	if(overwrite)
 		flags <- c(flags, "overwrite")
-	rgrass7::writeRAST(xSPDF, layer_name, flags = flags)
-	grass_session$layers <- c(grass_session$layers, layer_name)
-	return(grass_session)
+	rgrass7::writeRAST(x, layerName, flags = flags)
+	GSAppendRasterName(layerName, gs)
+}
+
+#' Add a RasterLayer *name* to a grass session and return the modified session
+#' @param x Character; the name of the layer(s) to add
+#' @param gs A [GrassSession] object
+#' 
+#' @return An S3 [GrassSession] object
+#' @keywords internal
+GSAppendRasterName <- function(x, gs) {
+	# make sure file exists
+	for(layer in x) {
+		lnames <- rgrass7::execGRASS("g.list", flags = "quiet", type='raster', mapset = gs$mapset, 
+			pattern = layer, intern=TRUE)
+		if(length(lnames) == 0)
+			stop("tried to add ", x, " to grass list of layers, but no layer exists")
+		gs$layers <- c(gs$layers, layer)
+	}
+	return(gs)
+}
+
+#' Read a raster from a grass session
+#' @param layer The name of the layer(s) to read
+#' @param gs A [GrassSession] object
+#' @param file (optional, recommended) Where to store the raster on disk
+#' @details If no file is specified, the raster will be stored in memory or as a temporary
+#'   file and will be lost at the end of the R sessionl.
+#' @return A raster or raster stack
+GSGetRaster <- function(layer, gs, file)
+{
+	ras <- sapply(layer, function(x) raster::raster(rgrass7::readRAST(x)))
+	if(length(layer) != 1) {
+		ras <- raster::stack(ras)
+	} else {
+		ras <- ras[[1]]
+	}
+	if(!missing(file)) 
+		ras <- raster::writeRaster(ras, file)
+	ras
 }
