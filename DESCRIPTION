@@ -1,6 +1,6 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -13,8 +13,11 @@ LazyData: true
 Imports:
 	rgrass7,
 	raster,
-	sp
+	sp,
+  Matrix
 Suggests: 
-    testthat
+    testthat,
+    maptools
 SystemRequirements:
 	GRASS GIS 7.4
+RoxygenNote: 6.1.1

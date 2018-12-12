@@ -61,8 +61,11 @@ fillDEM <- function(dem, gs, filledDEM, probs, file = NULL, ...)
 #' lost at the end of the R session
 #'
 #' @return A [raster::stack()] with two layers, flow accumulation ('accumulation') and drainage
-#' 		direction ('drainage') (if outputName is missing), or a GrassSession otherwise
-watershed <- function(dem, threshold = 250, gs, accumulation, drainage, file = NULL, ...)
+#' 		direction ('drainage') (if outputName is missing), or a GrassSession otherwise.
+#' 		Drainage direction values can be negative (indicating water flowing out of the map region),
+#' 		zero (indicating a portion of a natural depression), or positive. Positive values are 
+#' 		measured counterclockwise from northeast; 1 is northeast, 2 north,, etc through 8 flowing #'	  due east.
+accumulate <- function(dem, threshold = 250, gs, accumulation, drainage, file = NULL, ...)
 {
 	if(missing(gs)) {
 		gs <- GrassSession(dem, layerName = "dem", ...)
@@ -95,7 +98,7 @@ watershed <- function(dem, threshold = 250, gs, accumulation, drainage, file = N
 
 
 
-#' Produce a raster showing which pixels are part of a stream
+#' Produce a map of a stream network
 #' 
 #' @param dem Raster or character; a digital elevation model, preferably one filled using [fillDEM()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.
 #' @param accumulation Raster or character; flow accumulation later; see details.
@@ -115,12 +118,18 @@ watershed <- function(dem, threshold = 250, gs, accumulation, drainage, file = N
 #' It is recommended to specify the `file` parameter (including the extension to specify
 #' file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 #' lost at the end of the R session
-#' @return R [raster::raster] with values set to a unique ID for pixels in a stream, NA otherwise (if outputName is missing) or a GrassSession otherwise
+#' @return If `outputName` is missing and `type=='raster'`; a [raster::raster]; if 
+#'   `outputName` is missing and `type=='vector'`; a [sp::SpatialLinesDataFrame];
+#'   otherwuse a `GrassSession`
 extractStream <- function(dem, accumulation, threshold, qthresh = 0.95, weights, gs, 
-	outputName, file = NULL, ...)
+	outputName, type = c('raster', 'vector', 'both'), file = NULL, ...)
 {
+	type <- match.arg(type)
+
+	if((is.character(dem) | is.character(accumulation)) & missing(gs))
+		stop("If gs is missing, dem and accumulation must be a Raster or SpatialPixelsDataFrame")
 	if(missing(gs)) {
-		gs <- GrassSession(dem, layerName = "dem", ...)
+		gs <- GrassSession(dem, layerName = "dem", ...) 
 		dem <- "dem"
 	} else if(!is.character(dem)) {
 		gs <- GSAddRaster(dem, layerName = "dem", gs)
@@ -148,12 +157,87 @@ extractStream <- function(dem, accumulation, threshold, qthresh = 0.95, weights,
 		threshold <- quantile(accTh, qthresh, na.rm=TRUE)
 	}
 
-	streamRaster <- if(missing(outputName)) "streams" else outputName
+	streamName <- if(missing(outputName)) "streams" else outputName
 
 	rgrass7::execGRASS("r.stream.extract", flags=c("overwrite", "quiet"), elevation=dem, 
-		accumulation = accumulation, threshold = threshold, stream_raster = streamRaster)
-	gs <- GSAppendRasterName(streamRaster, gs)
+		accumulation = accumulation, threshold = threshold, stream_raster = streamName, stream_vector = streamName)
+	gs <- GSAppendRasterName(streamName, gs = gs)
 
-	res <- if(missing(outputName)) GSGetRaster(streamRaster, gs) else gs
+	if(!missing(outputName)) {
+		res <- gs
+	} else if(type == 'raster') {
+		res <- GSGetRaster(streamName, gs, file = file)
+	} else if(type == 'vector') {
+		res <- rgrass7::readVECT(streamName, ignore.stderr=TRUE, type="line")
+	} else {
+		res <- list(raster = GSGetRaster(streamName, gs, file = file), 
+			vector = rgrass7::readVECT(streamName, ignore.stderr=TRUE, type="line"))
+	}
+
 	return(res)
+}
+
+#' Snap points to a stream network raster
+#' 
+#' @param x SpatialPoints or similar object
+#' @param stream Raster or character; a stream network raster (e.g., from [extractStream()]). 
+#'   If specified as a character, a layer with that name from the existing [GrassSession()] 
+#'   given by gs will be used.
+#' @param buff The distance (in meters if x is in geographic coordinates, map units otherwise) to restrict the search from points in x
+#' @details If buff is too small, a nearby stream may not be found, in which case the original coordinates are returned
+#' @return A SpatialPointsDataFrame, with the attributes from `x` and new coordinates
+snapToStream <- function(x, stream, buff)
+{
+	if(grepl("longlat", sp::proj4string(x))) {
+		warning("x has geographic coordinates; reprojecting to epsg:32632")
+		projOrig <- sp::proj4string(x)
+		x <- sp::spTransform(x, sp::CRS("+init=epsg:32632"))
+		stream <- raster::projectRaster(stream, crs = sp::proj4string(x))
+	}
+
+	newCoords <- t(sapply(1:length(x), function(i) findClosest(x[i,], stream, buff = buff)))
+	result <- raster::as.data.frame(x)
+	result <- cbind(newCoords, result)
+	sp::coordinates(result) <- c(1,2)
+	sp::proj4string(result) <- sp::proj4string(x)
+	if(exists("projOrig"))
+		result <- sp::spTransform(result, projOrig)
+	return(result)
+}
+
+#' Find the closest non NA point in a raster
+#' @param x a spatial object
+#' @param y a raster
+#' @param buff The distance (in map units) to restrict the search from points in x
+#' @details Finds the points in y that are closest to x
+#' @return The index in y of the closest point
+#' @keywords internal
+findClosest <- function(x, y, buff)
+{
+	if(length(x) > 1)
+		stop("findClosest is not vectorised at this time")
+	smRas <- CropPtBuff(x, y, buff)
+	xc <- sp::coordinates(x)
+	inds <- which(!is.na(raster::values(smRas)))
+	if(length(inds) == 0)
+		return(xc)
+	yc <- sp::coordinates(smRas)[inds,,drop=FALSE]
+	xy <- rbind(xc,yc)
+	dists <- dist(xy)[1:nrow(yc)]
+	yc[which.min(dists),,drop=FALSE]
+}
+
+
+#' Crop raster around a point
+#' @param pt a spatial point
+#' @param ras a raster
+#' @param buff distance to crop around point, in map units
+#' @return Cropped raster
+#' @keywords internal
+
+CropPtBuff <- function(pt, ras, buff)
+{
+	xc <- sp::coordinates(pt)
+	newextent <- raster::extent(xc[1] - buff, xc[1] + buff, xc[2] - buff, xc[2] + buff)
+	raster::crop(ras, newextent)
 }

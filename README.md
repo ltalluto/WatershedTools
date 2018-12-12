@@ -2,7 +2,7 @@
 R package for watershed analysis
 
 This package wraps up some of the tools in GRASS GIS 7.4 to perform watershed analysis in R on R data structures.
-The package relies heavily on datastructures from the raster and sp packages for spatial objects on the R side.
+The package relies heavily on data structures from the raster and sp packages for spatial objects on the R side.
 On the grass side, it is necessary first to install GRASS GIS 7.4 on your system, then install this package.
 
 To install, the easiest method is via github. You can do this by first installing `devtools` then using it to install this package:

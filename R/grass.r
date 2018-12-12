@@ -133,7 +133,7 @@ GSGetRaster <- function(layer, gs, file)
 	} else {
 		ras <- ras[[1]]
 	}
-	if(!missing(file)) 
+	if(!missing(file) && is.character(file)) 
 		ras <- raster::writeRaster(ras, file)
 	ras
 }

@@ -1,7 +1,7 @@
 #' Catchment deliniation
 #' 
 #' @param x An [sp::SpatialPoints] objector a matrix of x-y coordinates
-#' @param drainage Raster or character, Drainage direction raster, from e.g., [watershed()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.
+#' @param drainage Raster or character, Drainage direction raster, from e.g., [accumulate()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.
 #' @param gs An optional [GrassSession()]; if missing a new one will be created
 #' @param areas Logical; if `TRUE`, returns catchment area for each point, otherwise returns
 #'  a [raster::RasterStack], one layer per point, with each layer delimiting the catchment for its
