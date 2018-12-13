@@ -33,6 +33,7 @@ rasterToSPDF <- function(x)
 #' 
 #' by default `override` will be TRUE if home and gisDbase are set to their defaults, otherwise FALSE. If TRUE, the new session will override any existing grass session (possibly damaging/overwriting existing files). It is an error if override is FALSE and there is an already running session.
 #' @return An S3 [GrassSession] object
+#' @export
 GrassSession <- function(layer, gisBase, layerName = NA, home = tempdir(), gisDbase = home,
 	location = 'NSmetabolism', mapset = 'PERMANENT', override)
 {
@@ -76,6 +77,7 @@ GrassSession <- function(layer, gisBase, layerName = NA, home = tempdir(), gisDb
 #'
 #' @param x A [GrassSession] object
 #'
+#' @export
 print.GrassSession <- function(x)
 {
 	print(rgrass7::gmeta())
@@ -87,6 +89,7 @@ print.GrassSession <- function(x)
 #' @param layer_name character; the name of the layer to add to grass.
 #' 
 #' @return An S3 [GrassSession] object
+#' @export
 GSAddRaster <- function(x, layerName, gs, overwrite = TRUE)
 {
 
@@ -106,6 +109,7 @@ GSAddRaster <- function(x, layerName, gs, overwrite = TRUE)
 #' 
 #' @return An S3 [GrassSession] object
 #' @keywords internal
+#' @export
 GSAppendRasterName <- function(x, gs) {
 	# make sure file exists
 	for(layer in x) {
@@ -125,6 +129,7 @@ GSAppendRasterName <- function(x, gs) {
 #' @details If no file is specified, the raster will be stored in memory or as a temporary
 #'   file and will be lost at the end of the R sessionl.
 #' @return A raster or raster stack
+#' @export
 GSGetRaster <- function(layer, gs, file)
 {
 	ras <- sapply(layer, function(x) raster::raster(rgrass7::readRAST(x)))

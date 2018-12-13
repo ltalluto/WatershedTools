@@ -14,6 +14,7 @@
 #' lost at the end of the R session
 #'
 #' @return A [raster::stack], optionally written to `file` with 2 layers: the filled DEM and a list of problem areas (if outputName is missing), or a GrassSession otherwise
+#' @export
 fillDEM <- function(dem, gs, filledDEM, probs, file = NULL, ...)
 {
 	if(missing(gs)) {
@@ -65,6 +66,7 @@ fillDEM <- function(dem, gs, filledDEM, probs, file = NULL, ...)
 #' 		Drainage direction values can be negative (indicating water flowing out of the map region),
 #' 		zero (indicating a portion of a natural depression), or positive. Positive values are 
 #' 		measured counterclockwise from northeast; 1 is northeast, 2 north,, etc through 8 flowing #'	  due east.
+#' @export
 accumulate <- function(dem, threshold = 250, gs, accumulation, drainage, file = NULL, ...)
 {
 	if(missing(gs)) {
@@ -121,6 +123,7 @@ accumulate <- function(dem, threshold = 250, gs, accumulation, drainage, file = 
 #' @return If `outputName` is missing and `type=='raster'`; a [raster::raster]; if 
 #'   `outputName` is missing and `type=='vector'`; a [sp::SpatialLinesDataFrame];
 #'   otherwuse a `GrassSession`
+#' @export
 extractStream <- function(dem, accumulation, threshold, qthresh = 0.95, weights, gs, 
 	outputName, type = c('raster', 'vector', 'both'), file = NULL, ...)
 {
@@ -186,6 +189,7 @@ extractStream <- function(dem, accumulation, threshold, qthresh = 0.95, weights,
 #' @param buff The distance (in meters if x is in geographic coordinates, map units otherwise) to restrict the search from points in x
 #' @details If buff is too small, a nearby stream may not be found, in which case the original coordinates are returned
 #' @return A SpatialPointsDataFrame, with the attributes from `x` and new coordinates
+#' @export
 snapToStream <- function(x, stream, buff)
 {
 	if(grepl("longlat", sp::proj4string(x))) {
@@ -234,7 +238,6 @@ findClosest <- function(x, y, buff)
 #' @param buff distance to crop around point, in map units
 #' @return Cropped raster
 #' @keywords internal
-
 CropPtBuff <- function(pt, ras, buff)
 {
 	xc <- sp::coordinates(pt)

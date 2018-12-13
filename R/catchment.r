@@ -35,6 +35,7 @@
 #' 	with many points to specify area = TRUE to get area (rather than the raster) for each point
 #' @return A vector of catchment areas (if `areas = TRUE`), otherwise a [raster::stack()] of 
 #'   delineated catchments
+#' @export
 catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
 {
 	if(missing(gs)) {
