@@ -1,6 +1,14 @@
 #' Creates a Watershed object
+#' @param stream Stream network raster, required
+#' @param drainage Drainage direction raster, required
+#' @param elevation Optional elevation raster
+#' @param accumulation Optional flow accumulation raster
+#' @param catchmentArea Optional catchment area raster
+#' @param otherLayers RasterStack of other data layers to add to the Watershed object
+#' @details All raster maps MUST be passed with the same extent
+#' @return A watershed object
 #' @export
-Watershed <- function(stream, drainage, ...) {
+Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, otherLayers) {
 	wsobj <- list()
 
 	## need to compute pixel IDs

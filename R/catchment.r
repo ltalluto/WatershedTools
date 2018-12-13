@@ -101,3 +101,70 @@ catchmentArea <- function(layer)
 	sum(keep$area[keep$value == 1])
 }
 
+
+#' Crops a delineated stream to the catchment at a specified point
+#' @param x The point at which to compute the catchment
+#' @param streamRaster A RasterLayer stream delineation (required), or character giving the 
+#' 		name of a Grass object
+#' @param streamVector A SpatialLines stream delineation (optional), or character giving the 
+#' 		name of a Grass object
+#' @param gs An optional [GrassSession()]; if missing a new one will be created
+#' @param file The file name of the raster to be returned (if `areas` is `FALSE`), see `details`.
+cropToCatchment <- function(x, streamRaster, streamVector, drainage, gs, file, ...)
+{
+
+
+
+	## no, this is wrong, save it within grass
+	crCatchment <- catchment(x, drainage, gs, areas = FALSE, file = NULL, ...)
+	
+	# for rasters we can do the cropping in R
+	if('RasterLayer' %in% class(streamRaster) {
+		output <- raster::mask(streamRaster, crCatchment)
+	} else {
+		## first step is prob not necessary, & should work for all nonzero values
+		## mapcalc on the raster - temp  = raster/raster results in all stream values 1
+		## mapcalc result = raster * (temp & catchment) 
+
+
+		## alternatively
+		## result = raster * catchment 
+	
+
+	}
+
+	if(!missing(streamVector)) {
+		## write lines to grass
+		## raster to poly of catchment
+		## intersect lines to polygon
+		## return lines
+	}
+
+
+	# if(missing(gs)) {
+	# 	gs <- GrassSession(streamRas, layerName = "stream", ...)
+	# 	# streamRaster <- "stream"
+	# } else if('RasterLayer' %in% class(streamRaster)) {
+	# 	gs <- GSAddRaster(streamRaster, layerName = "stream", gs)
+	# 	streamRaster <- "stream"
+	# }
+
+	# if(!missing())
+
+	# if('RasterLayer' %in% class(streamRaster)) {
+	# 	streamRas <- stream
+	# 	streamVect <- NA
+	# } else {
+	# 	streamRas <- stream$raster
+	# 	streamVect <- stream$vector
+	# }
+
+	# if(missing(gs)) {
+	# 	gs <- GrassSession(streamRas, layerName = "stream", ...)
+	# 	drainage <- "drainage"
+	# } else if(!is.character(drainage)) {
+	# 	gs <- GSAddRaster(drainage, layerName = "drainage", gs)
+	# 	drainage <- "drainage"
+	# }
+
+}
