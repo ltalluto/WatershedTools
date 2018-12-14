@@ -5,18 +5,32 @@
 #' @param accumulation Optional flow accumulation raster
 #' @param catchmentArea Optional catchment area raster
 #' @param otherLayers RasterStack of other data layers to add to the Watershed object
-#' @details All raster maps MUST be passed with the same extent
+#' @details All raster maps will be cropped to the stream network. The values in `stream` will
+#' 		be automatically assigned to a reachID field in the Watershed object.
 #' @return A watershed object
 #' @export
 Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, otherLayers) {
-	wsobj <- list()
+	dataRasters <- list(drainage = drainage)
+	if(!missing(elevation)) dataRasters$elevation <- elevation
+	if(!missing(accumulation)) dataRasters$accumulation <- accumulation
+	if(!missing(catchmentArea)) dataRasters$catchmentArea <- catchmentArea
+	if(!missing(otherLayers)) dataRasters$otherLayers <- otherLayers
+	allRasters <- lapply(dataRasters, function(x) {
+		if(!raster::compareRaster(stream, x, stopiffalse = FALSE))
+			x <- raster::crop(x, stream)
+		raster::mask(x, stream)
+	})
+	allRasters <- raster::stack(allRasters)
 
-	## need to compute pixel IDs
-	wsobj$adjacency <- WSConnectivity(drainage, stream)
+	## create pixel IDs
+	allRasters$reachID <- allRasters$id <- stream
+	maskIndices <- which(!is.na(raster::values(stream)))
+	allRasters$id[maskIndices] <- 1:length(maskIndices)
 
-	## maybe don't do this; instead store attributes in a spatialGridDataFrame
-	attr(wsobj, "projection") <- sp::proj4string(stream)
-	attr(wsobj, "resolution") <- raster::res(stream)
+	allSPDF <- rasterToSPDF(allRasters)
+	allSPDF <- allSPDF[!is.na(allSPDF$id),]
+	wsobj <- list(data = allSPDF)
+	wsobj$adjacency <- WSConnectivity(allRasters$drainage, allRasters$id)
 
 	class(wsobj) <- c("Watershed", class(wsobj))
 	return(wsobj)
@@ -54,7 +68,7 @@ WSConnectivity <- function(drainage, stream) {
 	coordRas <- raster::mask(coordRas, stream)
 
 	xy <- WSFlowTo(coordRas[inds])
-	adjacency <- Matrix::sparseMatrix(xy[,2], xy[,1], dims=rep(length(inds), 2), 
+	Matrix::sparseMatrix(xy[,2], xy[,1], dims=rep(length(inds), 2), 
 		dimnames = list(ids, ids), x = 1)
 }
 
@@ -95,7 +109,7 @@ WSFlowTo <- function(mat) {
 	na_ind <- which(mat[,3] < 0 | newx < 1 | newy < 1 | newx > max(mat[,1]) | newy > max(mat[,2]))
 	newx[na_ind] <- newy[na_ind] <- NA
 	resMat <- cbind(mat, newx, newy)
-	resMat <- merge(test, test[,c('x', 'y', 'id')], by.x = c(6,7), by.y = c(1,2), all.x = TRUE)
+	resMat <- merge(resMat[,c('newx', 'newy', 'id')], resMat[,c('x', 'y', 'id')], by = c(1,2), all.x = TRUE)
 	resMat <- resMat[,c('id.x', 'id.y')]
 	colnames(resMat) <- c('fromID', 'toID')
 	resMat <- resMat[order(resMat[,'fromID']),]
