@@ -86,7 +86,7 @@ print.GrassSession <- function(x)
 #' Add a RasterLayer to a grass session and return the modified session
 #' @param x A [raster::raster] object or a [sp::SpatialGridDataFrame]
 #' @param gs A [GrassSession] object
-#' @param layer_name character; the name of the layer to add to grass.
+#' @param layerName character; the name of the layer to add to grass.
 #' 
 #' @return An S3 [GrassSession] object
 #' @export
@@ -141,4 +141,49 @@ GSGetRaster <- function(layer, gs, file)
 	if(!missing(file) && is.character(file)) 
 		ras <- raster::writeRaster(ras, file)
 	ras
+}
+
+
+#' Convert a raster to a polygon in grass
+#' @param rast Either a rasterlayer or a file name of a raster in grass
+#' @param vect Optional layer name to save the polygon
+#' @param gs GrassSession to operate on
+#' @return If vect is missing, a spatialPolygons object, otherwise NULL (with the side-effect)
+#' 		of writing a polygon to the grass session
+#' @keywords internal
+GSRastToPoly <- function(rast, vect, gs) {
+	if(missing(vect))
+		vect <- "GSRastToPoly_temp"
+
+	if(!is.character(rast)) {
+		gs <- GSAddRaster(rast, "GSRastToPoly_temp_rast", gs)
+		rast <- "GSRastToPoly_temp_rast"
+	}
+	rgrass7::execGRASS("r.to.vect", flags=c("overwrite", "quiet", "s"), 
+		input = rast, output = vect, type='area', column = 'one')
+
+	if(rast == "GSRastToPoly_temp_rast")
+		gs <- GSClean(rast, gs, 'raster')
+	if(vect == "GSRastToPoly_temp") {
+		output <- GSGetVector(vect)
+		gs <- GSClean(vect, gs, 'vectpor')
+		return(output)
+	}
+}
+
+
+#' Delete layers from a GrassSession
+#' @param layer Layer name to delete
+#' @param gs GrassSession to operate on
+#' @param type Type of layer, either raster of vector
+#' @return Modified grass session
+#' @keywords internal
+GSClean <- function(layer, gs, type = c('raster', 'vector')) {
+	type <- match.arg(type)
+	rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type=type, name=layer)
+	if(type == 'raster') {
+		i <- grep(layer, gs$layers)
+		if(length(i) == 1) gs$layers <- gs$layers[-i]
+	}
+	return(gs)
 }

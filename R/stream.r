@@ -177,6 +177,7 @@ extractStream <- function(dem, accumulation, threshold, qthresh = 0.95, weights,
 			vector = rgrass7::readVECT(streamName, ignore.stderr=TRUE, type="line"))
 	}
 
+	gs <- GSClean(streamName, gs, "vector")
 	return(res)
 }
 

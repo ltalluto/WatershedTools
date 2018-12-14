@@ -14,18 +14,8 @@
 #' file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 #' lost at the end of the R session
 #'
-#' @return A [raster::stack()] with two layers, flow accumulation ('accumulation') and drainage
-#' 		direction ('drainage') (if outputName is missing), or a GrassSession otherwise
-
-
-
-#' @details If `grass_session` is specified, the existing session will be used. In this case
-#'   `drainage` is specified it will be written to the grass session with the name `drain_name`.
-#'   If `drainage` is missing, then the grass session will be searched for an existing layer with
-#'   a name given by `drain_name` (this is the fastest mode of operation).
-#'
 #' If no `grass_session` is specified, then a new session will be created, in which case `drainage`
-#'   is required and will  be copied to the session.
+#'   is required and will be copied to the session.
 #' 
 #' This tool will perform much better if it is run with an existing grass session with 
 #'	drainage direction already added:
@@ -59,7 +49,7 @@ catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
 		rgrass7::execGRASS("r.water.outlet", flags=c("overwrite"), input = drainage, 
 			output = catchName, coordinates = x[i,])
 		if(areas) {
-			result[i] <- catchmentArea(catchName)
+			result[i] <- catchmentArea(catchName, gs)
 		} else {
 			ras <- GSGetRaster(catchName, gs)
 			ras[ras == 0] <- NA
@@ -67,7 +57,11 @@ catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
 		}
 	}
 	if(!areas) {
-		result <- stack(result)
+		if(length(result) > 1) {
+			result <- stack(result)
+		} else {
+			result <- result[[1]]
+		}
 		if(!missing(file))
 			result <- writeRaster(result, file)
 	}
@@ -77,14 +71,14 @@ catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
 
 #' Compute the area of a delineated catchment
 #' @param layer Character; the name of the grass catchment from which to compute area
+#' @param gs A [GrassSession()]
 #' @return Numeric; area of the catchment
 #' @keywords internal
-catchmentArea <- function(layer)
+catchmentArea <- function(layer, gs)
 {
 	vname <- paste0('v_', layer)
 
-	rgrass7::execGRASS("r.to.vect", flags=c("overwrite", "quiet", "s"), 
-		input = layer, output = vname, type='area', column = 'one')
+	GSRastToPoly(layer, vname, gs)
 	res <- rgrass7::execGRASS("v.to.db", flags=c("quiet", "p"), map = vname, 
 				option = "area", intern=TRUE)
 	idres <- as.numeric(sub("^(-?[0-9])+\\|(.+)", "\\1", res))
@@ -97,7 +91,7 @@ catchmentArea <- function(layer)
 		data.frame(id = idval, value = val), all.x = TRUE)
 
 	## clean up
-	rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type="vector", name=vname)
+	gs <- GSClean(vname, gs, 'vector')
 	sum(keep$area[keep$value == 1])
 }
 
@@ -108,63 +102,54 @@ catchmentArea <- function(layer)
 #' 		name of a Grass object
 #' @param streamVector A SpatialLines stream delineation (optional), or character giving the 
 #' 		name of a Grass object
+#' @param drainage Raster or character, Drainage direction raster, from e.g., [accumulate()]. 
+#' 		If specified as a character, a layer with that name from the existing [GrassSession()]
+#' 		given by gs will be used.
 #' @param gs An optional [GrassSession()]; if missing a new one will be created
 #' @param file The file name of the raster to be returned (if `areas` is `FALSE`), see `details`.
-cropToCatchment <- function(x, streamRaster, streamVector, drainage, gs, file, ...)
+#' @param trim Should the resulting layers be trimmed (cropped to the non-NA extent)?
+#' @param ... Additional parameters to pass to [GrassSession()]
+#' @return As [extractStream()]
+#' @export
+cropToCatchment <- function(x, streamRaster, streamVector, drainage, gs, file, trim = TRUE, ...)
 {
 
+	if(missing(gs))
+	 	gs <- GrassSession(drainage, layerName = "cropToCatchment_drainage", ...)
 
-
-	## no, this is wrong, save it within grass
-	crCatchment <- catchment(x, drainage, gs, areas = FALSE, file = NULL, ...)
+	crCatchment <- catchment(x, drainage, gs, areas = FALSE)
+	if(is.character(streamRaster))
+		streamRaster <- GSGetRaster(streamRaster, gs)
 	
 	# for rasters we can do the cropping in R
-	if('RasterLayer' %in% class(streamRaster) {
-		output <- raster::mask(streamRaster, crCatchment)
-	} else {
-		## first step is prob not necessary, & should work for all nonzero values
-		## mapcalc on the raster - temp  = raster/raster results in all stream values 1
-		## mapcalc result = raster * (temp & catchment) 
-
-
-		## alternatively
-		## result = raster * catchment 
-	
-
-	}
+	output <- raster::mask(streamRaster, crCatchment)
+	if(trim)
+		output <- raster::trim(output)
+	if(!missing(file))
+		output <- raster::writeRaster(output, file)
 
 	if(!missing(streamVector)) {
-		## write lines to grass
-		## raster to poly of catchment
-		## intersect lines to polygon
+		if(any(grepl('SpatialLines', class(streamVector)))) {
+			rgrass7::writeVECT(streamVector, "cropToCatchment_streamVector", ignore.stderr=TRUE)
+			streamVector <- "cropToCatchment_streamVector"
+		}
+		catchVname <- "cropToCatchment_catchArea"
+		oname <- "cropToCatchment_output"
+		GSRastToPoly(streamRaster, catchVname, gs)
+		rgrass7::execGRASS("v.overlay", flags=c("overwrite", "quiet"), ainput = streamVector, 
+			atype = "line", binput = catchVname, operator = "and", output = oname)
+		vout <- rgrass7::readVECT(oname)
+		if(trim)
+			vout <- raster::crop(vout, output)
+
+		## clean up
+		gs <- GSClean(catchVname, gs, "vector")
+		gs <- GSClean(streamVector, gs, "vector")
+		gs <- GSClean(oname, gs, "vector")
+
 		## return lines
+		output <- list(raster = output, vector = vout)
 	}
 
-
-	# if(missing(gs)) {
-	# 	gs <- GrassSession(streamRas, layerName = "stream", ...)
-	# 	# streamRaster <- "stream"
-	# } else if('RasterLayer' %in% class(streamRaster)) {
-	# 	gs <- GSAddRaster(streamRaster, layerName = "stream", gs)
-	# 	streamRaster <- "stream"
-	# }
-
-	# if(!missing())
-
-	# if('RasterLayer' %in% class(streamRaster)) {
-	# 	streamRas <- stream
-	# 	streamVect <- NA
-	# } else {
-	# 	streamRas <- stream$raster
-	# 	streamVect <- stream$vector
-	# }
-
-	# if(missing(gs)) {
-	# 	gs <- GrassSession(streamRas, layerName = "stream", ...)
-	# 	drainage <- "drainage"
-	# } else if(!is.character(drainage)) {
-	# 	gs <- GSAddRaster(drainage, layerName = "drainage", gs)
-	# 	drainage <- "drainage"
-	# }
-
+	return(output)
 }
