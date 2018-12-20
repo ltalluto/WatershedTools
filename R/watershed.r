@@ -27,8 +27,9 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	maskIndices <- which(!is.na(raster::values(stream)))
 	allRasters$id[maskIndices] <- 1:length(maskIndices)
 
-	allSPDF <- rasterToSPDF(allRasters)
-	allSPDF <- allSPDF[!is.na(allSPDF$id),]
+	allSPDF <- rasterToSPDF(allRasters, complete.cases = TRUE)
+	# print(head(allSPDF))
+	# allSPDF <- allSPDF[!is.na(allSPDF$id),]
 	wsobj <- list(data = allSPDF)
 	wsobj$adjacency <- WSConnectivity(allRasters$drainage, allRasters$id)
 

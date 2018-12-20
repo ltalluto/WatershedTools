@@ -4,10 +4,12 @@
 \alias{catchmentArea}
 \title{Compute the area of a delineated catchment}
 \usage{
-catchmentArea(layer)
+catchmentArea(layer, gs)
 }
 \arguments{
 \item{layer}{Character; the name of the grass catchment from which to compute area}
+
+\item{gs}{A [GrassSession()]}
 }
 \value{
 Numeric; area of the catchment

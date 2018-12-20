@@ -4,10 +4,12 @@
 \alias{rasterToSPDF}
 \title{Produce a [sp::SpatialPixelsDataFrame] from a [raster::RasterLayer]}
 \usage{
-rasterToSPDF(x)
+rasterToSPDF(x, complete.cases = FALSE)
 }
 \arguments{
 \item{x}{A [raster::RasterLayer] object}
+
+\item{complete.cases}{Boolean, if TRUE only complete (non-na) rows are returned}
 }
 \value{
 A [sp::SpatialPixelsDataFrame]

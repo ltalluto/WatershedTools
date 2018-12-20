@@ -2,12 +2,15 @@
 #' Produce a [sp::SpatialPixelsDataFrame] from a [raster::RasterLayer]
 #'
 #' @param x A [raster::RasterLayer] object
+#' @param complete.cases Boolean, if TRUE only complete (non-na) rows are returned
 #' @return A [sp::SpatialPixelsDataFrame]
 #' @keywords internal
-rasterToSPDF <- function(x)
+rasterToSPDF <- function(x, complete.cases=FALSE)
 {
 	coords <- sp::coordinates(x)
-	gr <- data.frame(x=coords[,1], y=coords[,2], val=raster::values(x))
+	gr <- data.frame(cbind(coords, raster::values(x)))
+	if(complete.cases)
+		gr <- gr[complete.cases(gr),]
 	sp::coordinates(gr) <- c(1,2)
 	sp::proj4string(gr) <- sp::proj4string(x)
 	sp::gridded(gr) <- TRUE

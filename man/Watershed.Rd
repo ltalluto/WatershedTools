@@ -4,8 +4,29 @@
 \alias{Watershed}
 \title{Creates a Watershed object}
 \usage{
-Watershed(stream, drainage, ...)
+Watershed(stream, drainage, elevation, accumulation, catchmentArea,
+  otherLayers)
+}
+\arguments{
+\item{stream}{Stream network raster, required}
+
+\item{drainage}{Drainage direction raster, required}
+
+\item{elevation}{Optional elevation raster}
+
+\item{accumulation}{Optional flow accumulation raster}
+
+\item{catchmentArea}{Optional catchment area raster}
+
+\item{otherLayers}{RasterStack of other data layers to add to the Watershed object}
+}
+\value{
+A watershed object
 }
 \description{
 Creates a Watershed object
+}
+\details{
+All raster maps will be cropped to the stream network. The values in `stream` will
+		be automatically assigned to a reachID field in the Watershed object.
 }

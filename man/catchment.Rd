@@ -22,9 +22,6 @@ respective point.}
 \item{...}{Additional parameters to pass to [GrassSession()]}
 }
 \value{
-A [raster::stack()] with two layers, flow accumulation ('accumulation') and drainage
-		direction ('drainage') (if outputName is missing), or a GrassSession otherwise
-
 A vector of catchment areas (if `areas = TRUE`), otherwise a [raster::stack()] of 
   delineated catchments
 }
@@ -38,13 +35,8 @@ It is recommended to specify the `file` parameter (including the extension to sp
 file format; e.g., .tif, .grd). If not specified, a temp file will be created and will be
 lost at the end of the R session
 
-If `grass_session` is specified, the existing session will be used. In this case
-  `drainage` is specified it will be written to the grass session with the name `drain_name`.
-  If `drainage` is missing, then the grass session will be searched for an existing layer with
-  a name given by `drain_name` (this is the fastest mode of operation).
-
 If no `grass_session` is specified, then a new session will be created, in which case `drainage`
-  is required and will  be copied to the session.
+  is required and will be copied to the session.
 
 This tool will perform much better if it is run with an existing grass session with 
 drainage direction already added:

@@ -26,8 +26,8 @@ test_that("Crop to catchment", {
 	vals <- raster::values(streamCrop$raster)
 	expect_equal(sum(vals > 0, na.rm = T), 5777)
 	expect_equal(sum(vals == 0, na.rm = T), 0)
-	expect_equal(sum(vals > 0, na.rm = T) + sum(is.na(vals)), ncell(streamCrop$raster))
-	vectPr <- spTransform(streamCrop$vector, sp::CRS("+init=epsg:32632"))
-	expect_equal(as.integer(rgeos::gLength(vectPr)), 184657)
+	expect_equal(sum(vals > 0, na.rm = T) + sum(is.na(vals)), raster::ncell(streamCrop$raster))
+	vectPr <- sp::spTransform(streamCrop$vector, sp::CRS("+init=epsg:32632"))
+	expect_equal(as.integer(rgeos::gLength(vectPr)), 184733)
 })
 

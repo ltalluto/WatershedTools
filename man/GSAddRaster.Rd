@@ -9,9 +9,9 @@ GSAddRaster(x, layerName, gs, overwrite = TRUE)
 \arguments{
 \item{x}{A [raster::raster] object or a [sp::SpatialGridDataFrame]}
 
-\item{gs}{A [GrassSession] object}
+\item{layerName}{character; the name of the layer to add to grass.}
 
-\item{layer_name}{character; the name of the layer to add to grass.}
+\item{gs}{A [GrassSession] object}
 }
 \value{
 An S3 [GrassSession] object
