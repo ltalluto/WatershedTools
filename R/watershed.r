@@ -73,23 +73,6 @@ WSConnectivity <- function(drainage, stream) {
 		dimnames = list(ids, ids), x = 1)
 }
 
-#' Run the transport model
-#' @param adjacency The adjacency matrix describing the stream network
-#' @param initial A vector of initial conditions
-#' @param steps How may time steps to run the model
-#' @param weights Optional weighting to apply to the adjacency matrix
-#' @export
-transport <- function(adjacency, initial, steps, weights) {
-	if(!missing(weights))
-		adjacency <- t(t(adjacency) * weights)
-
-	state <- matrix(NA, nrow=length(initial), ncol = steps+1)
-	state[,1] <- initial
-	for(i in 2:(steps+1)) {
-		state[,i] <- (adjacency %*% state[,i-1])[,1]
-	}
-	return(state)
-}
 
 
 
