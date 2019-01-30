@@ -90,3 +90,85 @@ dCdt_transport_r <- function(t, y, parms) {
 	return(advection)
 }
 
+#' Compute hydraulic geometry from discharge
+#' @param discharge A vector of discharge values.
+#' @param pars Optional parameters for the scaling relationships; see 'details'
+#' @details If given, `pars` should be a named `list` with three elements: `velocity`, `depth`
+#' 		and `width`. Each element must be a vector with two elements, the first is the intercept
+#' 		and the second the slope. If omitted, values from Raymond et al will be used.
+#' 
+#' For the Raymond et al parameters, discharge should be in units of \eqn{m^3 s^{-1}}. 
+#' 		All other variables are in meters.
+#' @references Raymond, PA et al. 2012. Scaling the gas transfer velocity and hydraulic 
+#' 		geometry in streams and small rivers. *Limnology and Oceanography: Fluids and
+#' 		Environments*. **2**:41-53.
+#' @return A data frame with discharge, velocity, depth, and width
+hydraulic_geometry <- function(discharge, pars) {
+	if(missing(pars))
+	{
+		va <- -1.64
+		vb <- 0.285
+		da <- -0.895
+		db <- 0.294
+		wa <- 2.56
+		wb <- 0.423
+	} else {
+		va <- pars$velocity[1]
+		vb <- pars$velocity[2]
+		da <- pars$depth[1]
+		db <- pars$depth[2]
+		wa <- pars$width[1]
+		wb <- pars$width[2]
+	}
+
+	velocity <- exp(va + vb * log(discharge))
+	depth <- exp(da + db * log(discharge))
+	width <- exp(wa + wb * log(discharge))
+	ind <- which(discharge == 0)
+	velocity[ind] <- depth[ind] <- width[ind] <- 0
+	data.frame(discharge, velocity, depth, width)
+}
+
+
+#' Compute discharge from catchment area
+#' @param A vector of catchment area, in \eqn{m^2}
+#' @param calib An optional list with two named elements, `Q` and `A`; see 'details'
+#' @details Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
+#' 		If `calib` is included, the relationship will be re-parameterised by adjusting the
+#'  	intercept parameter `b` so that the calibration point falls on the line (while keeping 
+#' 		the slope the same)
+#' 
+#' 		The default parameters used by this function come from Burgers et al (2014). 
+#' 		For these parameters, catchment area units are expected to be in 
+#' 		\eqn{m^2}, and discharge will be computed in \eqn{m^3 s^{-1}}.
+#' @references Burgers HE et al. 2014. Size relationships of water discharge in rivers: scaling
+#' 		of discharge with catchment area, main-stem lengthand precipitation. 
+#' 		*Hydrological Processes*. **28**:5769-5775.
+discharge_scaling <- function(A, calib)
+{
+	bpar <- 6.3e-6
+	mpar <- 0.78
+
+	# convert units to match pars from Burgers et al
+	m2perkm2 <- 1000^2
+	m3perkm3 <- 1000^3
+	secperday <- 60*60*24
+	A <- A / m2perkm2 ## now in square kilometers
+	if(!missing(calib))
+	{
+		if(!is.list(calib) && !('A' %in% names(calib)) && !('Q' %in% names(calib))) 
+			stop("calib must be a list with two named elements, Q and A")
+		if(length(calib$A) != 1 || length(calib$Q) != 1)
+			stop("currently calibration may only be done for a single point")
+		calib$A <- calib$A / m2perkm2
+		calib$Q <- (calib$Q / m3perkm3) * secperday # now in cubic kilometers per day
+
+		# adjust the intercept parameter
+		bpar <- exp(log(calib$Q) - mpar * log(calib$A))
+	}
+
+	Q <- exp(log(bpar) + mpar * log(A))
+	# convert to m^3 per second
+	Q <- (Q * m3perkm3) / secperday
+	return(Q)
+}
