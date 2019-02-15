@@ -1,20 +1,27 @@
-#' Runs a transport-only model
+#' Runs a transport-reaction model
 #' @param ws A [Watershed] object
 #' @param initial A vector of initial conditions
 #' @param lateral Vector of values of the state variable for lateral input for each pixel
 #' @param times The times at which to compute the state variable
 #' @param method The integration method to use; default is euler
 #' @param dt The size of the time step for integration (euler method only)
+#' @param rxn A function giving the time derivative of the reaction component
+#' @param rxnParams A list of parameters to pass to `rxn`
 #' 
 #' @details Because the appropriate time step will vary based on the units and the specific
 #'    problem, the recommended approach is to first try a single run using lsoda (perhaps on
 #'    a small subset), then run euler at varying time steps to find the dt that produces
 #'    acceptable results.
+#' 
+#' If used, `rxn` must be a function taking `t` (the current time) and `y` 
+#'   (the state of the system) as its first few arguments. Other arguments can be added by 
+#'   name via the `rxnParams` argument.
 #' @return A state variable matrix (with one column per time step)
 #' @useDynLib WatershedTools
 #' @importFrom Rcpp sourceCpp
 #' @export
-transport <- function(ws, initial, lateral, times, method = c('euler', 'lsoda'), dt = 1) {
+transport <- function(ws, initial, lateral, times, method = c('euler', 'lsoda'), dt = 1, 
+	rxn = NULL, rxnParams = list()) {
 	method <- match.arg(method)
 	if(method == "lsoda" && !requireNamespace("deSolve"))
 		stop("method = 'lsoda' requires the deSolve package; please install it and try again")
@@ -33,30 +40,38 @@ transport <- function(ws, initial, lateral, times, method = c('euler', 'lsoda'),
 	
 	if(method == "euler") {
 		parms$adjacencyQ <- ws[["adjacency_q"]]
-		state <- transport_euler(initial, parms, times, dt)
+		state <- transport_euler(initial, parms, times, dt, rxn, rxnParams)
 	} else {
 		parms$adjacencyQ <- cbind(Matrix::which(ws[["adjacency_q"]] != 0, arr.ind = TRUE), 
 			ws[["adjacency_q"]][Matrix::which(ws[["adjacency_q"]] != 0)])
-		state <- t(deSolve::ode(initial, times = times, func = dCdt_transport, parms = parms))
+		state <- t(deSolve::ode(initial, times = times, func = dCdt_transport, parms = parms, 
+			rxn = rxn, rxnParams = rxnParams))
 		state <- state[2:nrow(state),] # dropping the times row that desolve adds on
 	}
 	return(state)
 }
+
 
 #' Do euler integration for the transport model
 #' @param initial A vector of initial conditions
 #' @param parms Integration parameters and data
 #' @param times The times at which to compute the state variable
 #' @param dt The size of the time step for integration
+#' @param rxn A function giving the time derivative of the reaction component
+#' @param rxnParams A list of parameters to pass to `rxn`
 #' @return A state variable matrix (with one column per time step)
 #' @keywords internal
-transport_euler <- function(initial, parms, times, dt) {
+transport_euler <- function(initial, parms, times, dt, rxn = NULL, rxnParams = list()) {
 	state <- matrix(NA, ncol=length(times), nrow=length(initial))
 	state[,1] <- statet <- initial
 	t <- 0
 	for(i in 2:ncol(state)) {
 		while(t < times[i]) {
 			statet <- statet + dt * dCdt_transport_r(t, statet, parms)
+			if(!is.null(rxn)) {
+				rxnList <- c(list(t = t, y = statet), (rxnParams))
+				statet <- statet + dt * do.call(rxn, rxnList)
+			}
 			t <- t + dt
 		}
 		state[,i] = statet[,1]
@@ -71,13 +86,20 @@ transport_euler <- function(initial, parms, times, dt) {
 #' @param t The time step
 #' @param y The state variable
 #' @param parms Model parameters and data
+#' @param rxn A function giving the time derivative of the reaction component
+#' @param rxnParams A list of parameters to pass to `rxn`
 #' @details At present, only advective transport is considered
 #' @return Flux vector, in units of state variable per unit time, for each spatial unit
 #' @keywords internal
-dCdt_transport <- function(t, y, parms) {
+dCdt_transport <- function(t, y, parms, rxn = NULL, rxnParams = list()) {
 	advection <- dCdt_transport_cpp(t, y, parms$adjacencyQ, parms$qout, parms$qin, 
 		parms$lateral, parms$csArea, parms$dx)
-	return(list(advection))
+	if(!is.null(rxn)) {
+		rxnList <- c(list(t = t, y = y), (rxnParams))
+		reaction <- do.call(rxn, rxnParams)
+	}
+
+	return(list(advection + reaction))
 }
 
 #' @rdname dCdt_transport

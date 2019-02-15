@@ -1,6 +1,6 @@
 #include <Rcpp.h>
 using namespace Rcpp;
- 
+
 NumericVector multiply_sparse(NumericMatrix mat, NumericVector y);
 
 //' Compute a concentration derivative for an entire river network

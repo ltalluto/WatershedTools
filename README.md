@@ -17,3 +17,19 @@ Most functions work the way you expect other R functions to work; communication 
 
     grass74 --config path
     
+## Installation Instructions
+
+### Linux
+Tested on Mint Cinnamon 19.1.
+
+1. Install Grass GIS 7.4, including the grass-dev package. Verify that it is working with the command `grass74 --config path`.
+2. Install the `r-base` and `r-base-dev` packages (and optionally RStudio).
+
+### Windows
+Tested on a fresh install of Windows 10.
+
+1. Install [Base R](https://cran.r-project.org/bin/windows/base/) and [RTools](https://cran.r-project.org/bin/windows/Rtools/).
+2. Install [Grass GIS 7.4](https://grass.osgeo.org/download/software/ms-windows/). Note that later versions will not work.
+3. 
+
+

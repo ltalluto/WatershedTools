@@ -4,7 +4,8 @@
 \alias{transport_euler}
 \title{Do euler integration for the transport model}
 \usage{
-transport_euler(initial, parms, times, dt)
+transport_euler(initial, parms, times, dt, rxn = NULL,
+  rxnParams = list())
 }
 \arguments{
 \item{initial}{A vector of initial conditions}
@@ -14,6 +15,10 @@ transport_euler(initial, parms, times, dt)
 \item{times}{The times at which to compute the state variable}
 
 \item{dt}{The size of the time step for integration}
+
+\item{rxn}{A function giving the time derivative of the reaction component}
+
+\item{rxnParams}{A list of parameters to pass to `rxn`}
 }
 \value{
 A state variable matrix (with one column per time step)

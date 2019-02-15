@@ -2,11 +2,11 @@ context("Hydrology")
 library("WatershedTools")
 
 ws <- readRDS(system.file("testdata/testWS.rds", package="WatershedTools"))
+initial <- lateral <- rep(0, nrow(ws$data))
+startloc <- 10546
+initial[startloc] <- 500
 
 test_that("transport works with lsoda & euler", {
-	initial <- lateral <- rep(0, nrow(ws$data))
-	startloc <- 10546
-	initial[startloc] <- 500
 
 	## Note --> lsoda tests fail due to a bug in deSolve
 	## "unlock_solver" not resolved from current namespace (deSolve)
@@ -33,4 +33,21 @@ test_that("Hydraulic geometry scaling", {
 	expect_equal(hg$velocity[1], 0.41683, tolerance = 1e-5)
 	expect_equal(hg$depth[1], 0.89950, tolerance = 1e-5)
 	expect_equal(hg$width[1], 40.25818, tolerance = 1e-5)
+})
+
+test_that("Simple transport-reaction model", {
+	react <- function(t, y, rate) y * rate
+	rt1 <- -0.5
+	rt3 <- 1
+	expect_error(res <- transport(ws, initial, lateral, seq(0,50, 1), method = 'euler', 
+		rxn = react, rxnParams = list(rate = rt1)), regex=NA)
+	expect_error(res2 <- transport(ws, initial, lateral, seq(0,50, 1), method = 'euler', 
+		rxn = react, rxnParams = list(rate = 0)), regex=NA)
+	expect_error(res3 <- transport(ws, initial, lateral, seq(0,50, 1), method = 'euler', 
+		rxn = react, rxnParams = list(rate = rt3)), regex=NA)
+	tr <- res2[startloc,1] - res2[startloc,2]
+	expect_equal(res[startloc,1] - tr, res2[startloc,2])
+	expect_equal((res[startloc,1] - tr) + (res[startloc,1] - tr) * rt1, res[startloc,2])
+	expect_equal((res3[startloc,1] - tr) + (res3[startloc,1] - tr) * rt3, res3[startloc,2])
+
 })

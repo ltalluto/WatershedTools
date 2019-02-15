@@ -5,7 +5,7 @@
 \alias{dCdt_transport_r}
 \title{Compute flux due to transport}
 \usage{
-dCdt_transport(t, y, parms)
+dCdt_transport(t, y, parms, rxn = NULL, rxnParams = list())
 
 dCdt_transport_r(t, y, parms)
 }
@@ -15,6 +15,10 @@ dCdt_transport_r(t, y, parms)
 \item{y}{The state variable}
 
 \item{parms}{Model parameters and data}
+
+\item{rxn}{A function giving the time derivative of the reaction component}
+
+\item{rxnParams}{A list of parameters to pass to `rxn`}
 }
 \value{
 Flux vector, in units of state variable per unit time, for each spatial unit
