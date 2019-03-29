@@ -125,6 +125,7 @@ dCdt_transport_r <- function(t, y, parms) {
 #' 		geometry in streams and small rivers. *Limnology and Oceanography: Fluids and
 #' 		Environments*. **2**:41-53.
 #' @return A data frame with discharge, velocity, depth, and width
+#' @export
 hydraulic_geometry <- function(discharge, pars) {
 	if(missing(pars))
 	{
@@ -166,6 +167,7 @@ hydraulic_geometry <- function(discharge, pars) {
 #' @references Burgers HE et al. 2014. Size relationships of water discharge in rivers: scaling
 #' 		of discharge with catchment area, main-stem lengthand precipitation. 
 #' 		*Hydrological Processes*. **28**:5769-5775.
+#' @export
 discharge_scaling <- function(A, calib)
 {
 	bpar <- 6.3e-6

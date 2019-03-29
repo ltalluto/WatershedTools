@@ -12,9 +12,10 @@ WSConnectivity(drainage, stream)
 \item{stream}{Stream network raster; see `details`}
 }
 \value{
-A [Matrix::sparseMatrix()] representation of the river network. For a `stream` input
-	raster with `n` non-NA cells, the dimensions of this matrix will be n by n. Row/column
-	names of the matrix will be the pixel IDs from the `stream` input raster. Values of the
+A list with two elements, the first containing corrected drainage directions, the 
+		second with A [Matrix::sparseMatrix()] representation of the river network. For a `stream` 
+		input raster with `n` non-NA cells, the dimensions of this matrix will be n by n. Dimnames
+	of the matrix will be the pixel IDs from the `stream` input raster. Values of the
 	matrix cells are either 0 or 1; a zero indicates no flow, a one in cell i,j indicates
 	that reach `i` receives water from reach `j`.
 }
