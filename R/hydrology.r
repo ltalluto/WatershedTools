@@ -155,7 +155,7 @@ hydraulic_geometry <- function(discharge, pars) {
 
 #' Compute discharge from catchment area
 #' @param A vector of catchment area, in \eqn{m^2}
-#' @param calib An optional list with two named elements, `Q` and `A`; see 'details'
+#' @param calib A data.frame with two elements, `A` (catchment area) and `Q` (observed discarge)
 #' @details Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
 #' 		If `calib` is included, the relationship will be re-parameterised by adjusting the
 #'  	intercept parameter `b` so that the calibration point falls on the line (while keeping 
@@ -170,28 +170,32 @@ hydraulic_geometry <- function(discharge, pars) {
 #' @export
 discharge_scaling <- function(A, calib)
 {
-	bpar <- 6.3e-6
-	mpar <- 0.78
+	# params from Burgers et al 2014; assuming normal distribution on log scale
+	logB_mu <- log(6.3e-6)
+	logB_sd <- 0.4137399
+	m_mu <- 0.78
+	m_sd <- 0.03571429
 
 	# convert units to match pars from Burgers et al
 	m2perkm2 <- 1000^2
 	m3perkm3 <- 1000^3
 	secperday <- 60*60*24
 	A <- A / m2perkm2 ## now in square kilometers
-	if(!missing(calib))
-	{
-		if(!is.list(calib) && !('A' %in% names(calib)) && !('Q' %in% names(calib))) 
-			stop("calib must be a list with two named elements, Q and A")
-		if(length(calib$A) != 1 || length(calib$Q) != 1)
-			stop("currently calibration may only be done for a single point")
-		calib$A <- calib$A / m2perkm2
-		calib$Q <- (calib$Q / m3perkm3) * secperday # now in cubic kilometers per day
+	calib$A <- calib$A / m2perkm2
+	calib$logA <- log(calib$A)
+	calib$Q <- (calib$Q / m3perkm3) * secperday # now in cubic kilometers per day
+	calib$logQ <- log(calib$Q)
 
-		# adjust the intercept parameter
-		bpar <- exp(log(calib$Q) - mpar * log(calib$A))
+	if(nrow(calib) == 1) {
+		logB_mu <- log(calib$Q) - mpar * log(calib$A)
+		Q <- exp(logB_mu + m_mu * log(A))
+	} else {
+		fit <- rstanarm::stan_glm(logQ ~ logA, data = calib,
+				prior_intercept = normal(logB_mu, logB_sd),
+				prior = normal(m_mu, m_sd))
+		Q <- predict(fit, newdata = data.frame(logA = log(A)))
 	}
 
-	Q <- exp(log(bpar) + mpar * log(A))
 	# convert to m^3 per second
 	Q <- (Q * m3perkm3) / secperday
 	return(Q)
