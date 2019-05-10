@@ -21,6 +21,7 @@ Suggests:
     testthat,
     maptools,
     rgeos,
+    rstanarm
 SystemRequirements:
 	GRASS GIS 7.4
 RoxygenNote: 6.1.1

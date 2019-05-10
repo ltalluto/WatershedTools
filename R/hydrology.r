@@ -157,9 +157,12 @@ hydraulic_geometry <- function(discharge, pars) {
 #' @param A vector of catchment area, in \eqn{m^2}
 #' @param calib A data.frame with two elements, `A` (catchment area) and `Q` (observed discarge)
 #' @details Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
-#' 		If `calib` is included, the relationship will be re-parameterised by adjusting the
-#'  	intercept parameter `b` so that the calibration point falls on the line (while keeping 
-#' 		the slope the same)
+#' 		If a single point in `calib` is included, the relationship will be re-parameterised by 
+#'  	adjusting the intercept parameter `b` so that the calibration point falls on the line  
+#' 		(while keeping the slope the same).
+#' 
+#' 		With multiple points, a bayesian regression model is fit with rstanarm. The model uses
+#' 		Burgers et al parameters as an informative prior.
 #' 
 #' 		The default parameters used by this function come from Burgers et al (2014). 
 #' 		For these parameters, catchment area units are expected to be in 
@@ -170,6 +173,7 @@ hydraulic_geometry <- function(discharge, pars) {
 #' @export
 discharge_scaling <- function(A, calib)
 {
+
 	# params from Burgers et al 2014; assuming normal distribution on log scale
 	logB_mu <- log(6.3e-6)
 	logB_sd <- 0.4137399
@@ -190,10 +194,14 @@ discharge_scaling <- function(A, calib)
 		logB_mu <- log(calib$Q) - mpar * log(calib$A)
 		Q <- exp(logB_mu + m_mu * log(A))
 	} else {
+		if(!requireNamespace("rstanarm"))
+			stop("This functionality requires the rstanarm package; please install it and try again")
+		# stan doesn't play nice with data tables
+		calib <- as.data.frame(calib)
 		fit <- rstanarm::stan_glm(logQ ~ logA, data = calib,
 				prior_intercept = normal(logB_mu, logB_sd),
 				prior = normal(m_mu, m_sd))
-		Q <- predict(fit, newdata = data.frame(logA = log(A)))
+		Q <- exp(predict(fit, newdata = data.frame(logA = log(A))))
 	}
 
 	# convert to m^3 per second
