@@ -171,3 +171,33 @@ WSComputeLength <- function(drainage, cellsize) {
 	cellLength[diagonal] <- sqrt(cellsize[1]^2 + cellsize[2]^2)
 	cellLength
 }
+
+
+#' Methods for watershed objects
+#' @export
+head.Watershed <- function(x, ...) head(x$data, ...)
+
+#' Methods for watershed objects
+#' @export
+summary.Watershed <- function(x, ...) summary(x$data, ...)
+
+#' Plot method for a [Watershed()]
+#' 
+#' @param x Watershed object to plot
+#' @param variable Optional, name of variable to plot
+#' @param transform A transformation function (e.g., `log`) to apply to the variable 
+#' @param size Size of the plotted points
+#' @export
+plot.Watershed <- function(x, variable, transform, size = 0.5)
+{
+	if(!missing(transform))
+		x$data[[variable]] <- transform(x$data[[variable]])
+	pl <- ggplot2::ggplot(as.data.frame(x$data), ggplot2::aes(x=x, y=y))
+	pl <- pl + ggplot2::geom_point(size=size)
+	if(!missing(variable))
+		pl <- pl + ggplot2::aes_string(color=variable)
+	if(requireNamespace("viridisLite")) {
+		pl <- pl + ggplot2::scale_colour_viridis_c(option = "inferno")
+	} 
+	pl
+}

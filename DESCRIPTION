@@ -16,12 +16,15 @@ Imports:
     sp,
     Matrix,
     deSolve,
-    Rcpp
+    Rcpp,
+    ggplot2
 Suggests: 
     testthat,
     maptools,
     rgeos,
-    rstanarm
+    rstanarm,
+    viridisLite,
+    RColorBrewer
 SystemRequirements:
 	GRASS GIS 7.4
 RoxygenNote: 6.1.1
