@@ -201,3 +201,47 @@ plot.Watershed <- function(x, variable, transform, size = 0.5)
 	} 
 	pl
 }
+
+
+#' Get data from all confluences of a watershed
+#' 
+#' @param ws Watershed object
+#' @return A `data.frame` containing data for all confluences
+#' @export
+confluences <- function(ws) {
+	as.data.frame(ws$data[rowSums(ws$adjacency) > 1,])
+}
+
+#' Get data from all headwaters of a watershed
+#' 
+#' @param ws Watershed object
+#' @return a `data.frame` containing data for all headwaters
+#' @export
+headwaters <- function(ws) {
+	as.data.frame(ws$data[rowSums(ws$adjacency) == 0,])
+}
+
+
+#' Returns all points in the watershed connecting two points
+#' @param ws Watershed object
+#' @param point1 upstream point, either an ID number of a point in the watershed, 
+#' 		or an object inheriting from SpatialPoints
+#' @param point2 downstream point, either an ID number of a point in the watershed, 
+#' 		or an object inheriting from SpatialPoints
+connect <- function(ws, point1, point2){
+	## here need some code to turn point1 and point2 into rows/columns of adj matrix if they
+	## are spatial points
+	ws$data$connected <- 0
+	ws$data$connected[ws$data$id == point1 | ws$data$id == point2] <- 1
+	nextPt <- which(ws$adjacency[,point1] == 1)
+	while(ws$data$id[nextPt] != point2) {
+		ws$data$connected[nextPt] <- 1
+		if(sum(ws$adjacency[,nextPt]) == 0)
+			stop("The points are not connected")
+		nextPt <- which(ws$adjacency[,nextPt] == 1)
+	}
+}
+### NOTE
+# this works, but it's slow
+# for transferring to C++, can get a from-to matrix using
+# which(ws$adjacency == 1, arr.ind = TRUE)

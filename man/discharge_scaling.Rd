@@ -9,16 +9,19 @@ discharge_scaling(A, calib)
 \arguments{
 \item{A}{vector of catchment area, in \eqn{m^2}}
 
-\item{calib}{An optional list with two named elements, `Q` and `A`; see 'details'}
+\item{calib}{A data.frame with two elements, `A` (catchment area) and `Q` (observed discarge)}
 }
 \description{
 Compute discharge from catchment area
 }
 \details{
 Computes discharge from catchment area as \eqn{\log Q = \log b + m \log A}.
-		If `calib` is included, the relationship will be re-parameterised by adjusting the
- 	intercept parameter `b` so that the calibration point falls on the line (while keeping 
-		the slope the same)
+		If a single point in `calib` is included, the relationship will be re-parameterised by 
+ 	adjusting the intercept parameter `b` so that the calibration point falls on the line  
+		(while keeping the slope the same).
+
+		With multiple points, a bayesian regression model is fit with rstanarm. The model uses
+		Burgers et al parameters as an informative prior.
 
 		The default parameters used by this function come from Burgers et al (2014). 
 		For these parameters, catchment area units are expected to be in 
