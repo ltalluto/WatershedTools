@@ -46,3 +46,18 @@ NumericVector multiply_sparse(NumericMatrix mat, NumericVector y)
 	return output;
 }
 
+//' Connect points in a watershed
+//' @param dsPixel A vector of downstream pixels, diPixel[i] is downstream from pixel i
+// [[Rcpp::export]]
+std::vector<int> connectCPP(NumericVector dsPixel, int upstream, int downstream) {
+	std::vector<int> connectedPts;
+	int current = upstream;
+	connectedPts.push_back(current);
+	while(current != downstream && current > 1) {
+		current = dsPixel(current - 1); // -1 to correct for C++ indexing
+		connectedPts.push_back(current);
+	}
+	if(current == 1 && downstream != 1)
+		connectedPts.clear();
+	return connectedPts;
+}

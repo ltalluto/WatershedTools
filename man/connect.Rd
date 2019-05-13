@@ -9,11 +9,12 @@ connect(ws, point1, point2)
 \arguments{
 \item{ws}{Watershed object}
 
-\item{point1}{upstream point, either an ID number of a point in the watershed, 
-or an object inheriting from SpatialPoints}
+\item{point1}{ID number of upstream point}
 
-\item{point2}{downstream point, either an ID number of a point in the watershed, 
-or an object inheriting from SpatialPoints}
+\item{point2}{ID of downstream point}
+}
+\value{
+vector of pixel ids
 }
 \description{
 Returns all points in the watershed connecting two points

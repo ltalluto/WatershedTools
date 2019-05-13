@@ -24,3 +24,9 @@ dCdt_transport_cpp <- function(t, y, adjacencyQ, qout, qin, lateral, csArea, dx)
     .Call('_WatershedTools_dCdt_transport_cpp', PACKAGE = 'WatershedTools', t, y, adjacencyQ, qout, qin, lateral, csArea, dx)
 }
 
+#' Connect points in a watershed
+#' @param dsPixel A vector of downstream pixels, diPixel[i] is downstream from pixel i
+connectCPP <- function(dsPixel, upstream, downstream) {
+    .Call('_WatershedTools_connectCPP', PACKAGE = 'WatershedTools', dsPixel, upstream, downstream)
+}
+
