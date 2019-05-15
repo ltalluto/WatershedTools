@@ -173,36 +173,6 @@ WSComputeLength <- function(drainage, cellsize) {
 }
 
 
-#' Methods for watershed objects
-#' @export
-head.Watershed <- function(x, ...) head(x$data, ...)
-
-#' Methods for watershed objects
-#' @export
-summary.Watershed <- function(x, ...) summary(x$data, ...)
-
-#' Plot method for a [Watershed()]
-#' 
-#' @param x Watershed object to plot
-#' @param variable Optional, name of variable to plot
-#' @param transform A transformation function (e.g., `log`) to apply to the variable 
-#' @param size Size of the plotted points
-#' @export
-plot.Watershed <- function(x, variable, transform, size = 0.5)
-{
-	if(!missing(transform))
-		x$data[[variable]] <- transform(x$data[[variable]])
-	pl <- ggplot2::ggplot(as.data.frame(x$data), ggplot2::aes(x=x, y=y))
-	pl <- pl + ggplot2::geom_point(size=size)
-	if(!missing(variable))
-		pl <- pl + ggplot2::aes_string(color=variable)
-	if(requireNamespace("viridisLite")) {
-		pl <- pl + ggplot2::scale_colour_viridis_c(option = "inferno")
-	} 
-	pl
-}
-
-
 #' Get data from all confluences of a watershed
 #' 
 #' @param ws Watershed object
@@ -259,3 +229,120 @@ connect <- function(ws, point1, point2) {
 		stop("The points are not connected")
 	return(connected)
 }
+
+
+#' Splits a reachID at selected points
+#' @param ws A watershed object
+#' @param points A vector of ids at which to split reaches
+#' @param renumber Is it ok to renumber the reaches? (recommended)
+#' @param na_ignore Logical, if `TRUE` NAs will be dropped from the data. If `FALSE`, any NAs
+#' 		in `points` will cause an error.
+#' @return A modified watershed with new reachIDs
+#' @export
+splitReaches <- function(ws, points, renumber = TRUE, na_ignore = FALSE) {
+	if(na_ignore & any(is.na(points))) {
+		points <- points[!is.na(points)]
+	} else if(any(is.na(points))) {
+		stop("NA in points; use na_ignore = TRUE to ignore")
+	}
+	for(pt in points) {
+		ids <- which(ws$data$reachID == ws$data$reachID[pt])
+		reachAdj <- ws$adjacency[ids, ids]
+		mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
+		if(pt != mostUpstream) {
+			chIds <- connect(ws, mostUpstream, pt)
+			ws$data$reachID[chIds] <- max(ws$data$reachID) + 1
+		}
+	}
+	if(renumber) ws$data$reachID <- renumberReaches(ws$data$reachID)
+	ws
+}
+
+#' Produce a site by reach connectivity matrix
+#' 
+#' A value of 1 at indices `[i,j]` indicates that reach `i` is connected to (i.e., downstream of)
+#' reach `j`.
+#' @param ws A watershed object
+#' @param points A vector of pixel id numbers for sites
+#' @param names An optional vector of site names
+#' @param self If TRUE, a reach is considered connected to itself
+#' @return A [Matrix::sparseMatrix()]
+#' @export
+siteByReach <- function(ws, points, names, self = TRUE) {
+	rIDs <- ws[points, 'reachID']
+	conn <- reachByReachConn(ws, self)
+	mat <- conn[rIDs,, drop=FALSE]
+	if(missing(names)) {
+		rownames(mat) <- points
+	} else {
+		rownames(mat) <- names
+	}
+	mat
+}
+
+
+#' Produce a reach by reach connectivity matrix
+#' 
+#' @param ws A watershed
+#' @param self If TRUE, a reach is considered connected to itself
+#' Nonzero values indicate that a reachID in a row is downstream from that column
+#' @return A [Matrix::sparseMatrix()]
+#' @keywords internal
+reachByReachConn <- function(ws, self = TRUE) {
+	adj <- reachByReachAdj(ws)
+	if(self)
+		diag(adj) <- 1
+	for(i in 1:nrow(adj))
+		adj <- adj %*% adj + adj
+	adj[adj != 0] <- 1
+	adj
+}
+
+
+#' Produce a reach by reach adjacency matrix
+#' @keywords internal
+reachByReachAdj <- function(ws) {
+	if(max(ws$data$reachID) != length(unique(ws$data$reachID)))
+		stop("ReachIDs not in 1:length(unique(reachID)); they must be renumbered")
+	
+	reaches <- sort(unique(ws$data$reachID))
+	adjMat <- parallel::mclapply(reaches, function(r) reachAdj(ws, r))
+	adjMat <- do.call(rbind, adjMat)
+	adjspMat <- Matrix::sparseMatrix(adjMat[,1], adjMat[,2], dims=rep(max(ws$data$reachID), 2),
+		dimnames = list(reaches, reaches))
+	adjspMat
+}
+
+#' Find all reaches directly upstream from a given reach
+#' @keywords internal
+reachAdj <- function(ws, rch) {
+	ids <- which(ws$data$reachID == rch)
+	reachAdj <- ws$adjacency[ids, ids, drop = FALSE]
+	mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
+	upRch <- which(ws$adjacency[mostUpstream,] == 1)
+	if(length(upRch) > 0) {
+		upRch <- ws$data$reachID[upRch]
+		return(cbind(rch, upRch))
+	} else return(NULL)
+}
+
+
+#' Renumber reachIDs to start at 1 and increase one at a time, preserving ordering
+#' @keywords internal
+renumberReaches <- function(rIDs) {
+	newNums <- 1:length(unique(rIDs))
+	oldNums <- sort(unique(rIDs))
+	newNums[match(rIDs, oldNums)]
+}
+
+
+#' Extract pixelIDs from a watershed at spatial locations
+#' @param ws A watershed object
+#' @param x An object inheriting from `sp::SpatialPoints()`
+#' @return A vector of pixel IDs
+#' @export
+extract <- function(ws, x) {
+	ras <- raster::rasterFromXYZ(ws[,c('x', 'y', 'id')])
+	raster::extract(ras, x)
+}
+

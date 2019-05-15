@@ -1,6 +1,6 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 1.0.0
+Version: 1.0.0.9004
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -10,11 +10,12 @@ Description: This is a wrapper around various GRASS GIS 7.4 functions for conduc
 License: MIT + file "Licence"
 Encoding: UTF-8
 LazyData: true
+Depends:
+    Matrix,
+    sp
 Imports:
     rgrass7,
     raster,
-    sp,
-    Matrix,
     deSolve,
     Rcpp,
     ggplot2

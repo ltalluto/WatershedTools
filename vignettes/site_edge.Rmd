@@ -1,0 +1,82 @@
+---
+title: "Creating a site by edge matrix"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First load the package and double check the version.
+
+```{r}
+library("WatershedTools")
+packageVersion("WatershedTools")
+## must be >= 1.0.0.9004
+```
+
+Then read in the data and your sites. You can check the initial reaches using the plot function:
+
+```{r}
+library("ggplot2") ## required for plotting
+vjosa <- readRDS("~/Nimbus/DelineatedCatchments/Vjosa/res/vjosaWatershedSpring2018.rds")
+sites <- readRDS("~/Nimbus/DelineatedCatchments/Vjosa/res/sitesSpring2018.rds")
+
+## here for example we drop a few sites that aren't relevant
+sites <- sites[-which(sites$siteName %in% c('9900', 'trekking_hellas', 'ws_albania')),]
+pl <- plot(vjosa, variable = "reachID")
+pl <- pl + geom_point(data = as.data.frame(sites), aes(x=x, y=y), color='cyan', size=1)
+pl
+```
+
+To work with the package, you need to convert the sites into point IDs on the stream.
+
+```{r}
+## lots of packages have an extract function, so we are careful to specify which one
+siteIDs <- WatershedTools::extract(vjosa, sites)
+```
+
+Double check that all of the sites you want have ids; if not, you will need to snap the sites before using them.
+```{r}
+cbind(sites$siteName, siteIDs)
+## if there are NAs that you care about, use
+## sites <- snapToStream(sites, vjosa, buf=300)
+## siteIDs <- WatershedTools::extract(vjosa, sites)
+```
+
+If needed, you can add all headwater streams as sites. It's best to keep track of them by also saving site names. There is also a function for the outlet, if needed.
+```{r}
+headSites <- headwaters(vjosa)
+## siteNames <- c(sites$siteName, paste0('h', headSites))
+## sites <- c(sites, headSites)
+## outSite <- outlets(vjosa)
+## siteNames <- c(siteNames, paste0('o', outSite))
+## sites <- c(sites, outSite)
+```
+
+The next step is to split and renumber the reaches:
+```{r}
+vjosa <- splitReaches(vjosa, siteIDs, renumber = TRUE, na_ignore = TRUE)
+pl <- plot(vjosa, variable = "reachID")
+pl <- pl + geom_point(data = as.data.frame(sites), aes(x=x, y=y), color='cyan', size=1)
+pl
+```
+
+Assuming the split reaches are to your liking (and you can zoom in on the plot to be sure), you can then build the site by reach (i.e., site by edge) matrix. This doesn't work with NAs though, so we should drop those from the siteIDs.
+
+```{r}
+siteIDs <- siteIDs[!is.na(siteIDs)]
+siByEd <- siteByReach(vjosa, siteIDs, names = sites$siteName)
+```
+
+If you want to test things out, it's a bit janky at the moment, but you can get at it like this:
+```{r}
+vjosa$data$reachTest <- 0
+testPoint <- which(sites$siteName == '23')
+connectedReaches <- which(siByEd[testPoint,] != 0)
+vjosa$data$reachTest[vjosa[,"reachID"] %in% connectedReaches] <- 1
+pl <- plot(vjosa, variable = "reachTest", transform = as.factor)
+pl <- pl + geom_point(data = as.data.frame(sites)[testPoint,,drop=FALSE], 
+                      aes(x=x, y=y), color='cyan', size=1)
+pl
+```
