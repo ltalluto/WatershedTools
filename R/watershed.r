@@ -415,3 +415,63 @@ downstreamDist <- function(ws, x, variable = 'length', fun = sum) {
 		dims = c(length(x), length(x)), dimnames = list(x, x))
 }
 
+
+#' Probably blows up your computer. Possibly your city
+pointBySiteDist <- function(ws, x, variable = 'length') {
+	dsPixes <- downstreamPixelIds(ws)
+	dmat(x, dsPixes, nrow(ws$data), ws[,variable])
+}
+
+
+
+
+#' Interpolate a variable between points
+#' 
+#' If `x` is a vector, it must be the same length as `points`; each entry in `x` is taken
+#' to match a location in `points`. In this case, the function will return a vector with one
+#' value for each point in `ws`.
+#' 
+#' If `x` is a matrix, then the first dimension (i.e., rows) is taken to be space; the number
+#' of rows must match the length of `points`. The columns are taken to represent a different
+#' dimension (e.g., time). The variable `times` is optional and allows the user to specify
+#' at what times (e.g., in minutes) the observations were taken; if present, it must have
+#' the same length as ncol(x). `times_out` then controls the times at which output is
+#' provided (i.e., the number of columns in the returned matrix); the default is to do no
+#' interpolation in the second dimension.
+#' 
+#' If interpolation is required in both dimensions, locations with data will first be 
+#' interpolated in time (with no extrapolation beyond first/last times). Then all locations
+#' with missing values will be interpolated in space.
+#' 
+#' @param ws A watershed
+#' @param x A vector or matrix of the variable to interpolate, see 'details'
+#' @param points A vector of points at which observations in x are made; see 'details'
+#' @param weight A variable in `ws` to be used as weights for the interpolation
+#' @param times The times
+#' @param method Should linear or spline interpolation be used?
+#' @return A vector or matrix (as in `x`) of interpolated values
+interpolate <- function(ws, x, points, times, times_out = times, weight = 'length', 
+	method = c('linear', 'spline')) {
+	## checks
+	if(is.matrix(x)) {
+		if(nrow(x) != length(points))
+			stop("nrow(x) == length(points) is FALSE")
+		if(!missing(times) && ncol(x) != length(times)) {
+			stop("ncol(x) must equal length(times) if times is specified")
+		}
+	} else {
+		if(length(x) != length(points))
+			stop("length(x) must equal length(points)")
+	}
+
+	if(is.matrix(x) && !missing(times)) {
+		if()
+		if(any(is.na(x)) || !identical(times, times_out)) {
+			resTime <- matrix(NA, nrow=nrow(x), ncol=length(times_out))
+		}
+	}
+}
+
+
+
+interp_point <- function()

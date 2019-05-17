@@ -61,3 +61,31 @@ std::vector<int> connectCPP(NumericVector dsPixel, int upstream, int downstream)
 		connectedPts.clear();
 	return connectedPts;
 }
+
+
+//' Construct a distance matrix between one set of points and another
+//'
+//' @param x  Set of pixels to which to compute distance
+//' @param diPixel  A vector of downstream pixels, diPixel[i] is downstream from pixel i
+//' @param nx The total number of pixels in the network
+//' @param value The value to be added (e.g., length) when computing distance
+// [[Rcpp::export]]
+NumericMatrix dmat(NumericVector x, NumericVector dsPixel, int nx, NumericVector value) {
+	NumericMatrix distance(nx, x.size(), NA);
+
+	for(NumericVector::iterator xi = x.begin(); xi != x.end(); ++xi) {
+		int i = (int) (*xi) - 1; // -1 to correct for C++ indexing
+		int j = i;
+		int total = 0;
+		distance(i, j) = total;
+		while(j > 0) {
+			total += value(j);
+			j = (int) dsPixel(j); 
+			distance(i, j) = total;
+			NumericVector::iterator inx std::find(x.begin(), x.end(), j);
+			if(inx != x.end())
+				distance(j, inx - x.begin()) = -1 * total;
+		}
+	}
+	return distance;
+}
