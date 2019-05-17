@@ -217,14 +217,22 @@ downstreamPixelIds <- function(ws) {
 
 #' Returns all points in the watershed connecting two points
 #' @param ws Watershed object
-#' @param point1 ID number of upstream point
-#' @param point2 ID of downstream point
+#' @param upstream ID number of upstream point; if Inf ALL upstream pixels will be returned
+#' @param downstream ID of downstream point; if Inf ALL downstream pixels will be returned
 #' 
 #' @return vector of pixel ids
 #' @export
-connect <- function(ws, point1, point2) {
+connect <- function(ws, upstream, downstream) {
 	dsPixes <- downstreamPixelIds(ws)
-	connected <- connectCPP(dsPixes, point1, point2)
+	if(is.infinite(downstream)) {
+		downstream <- outlets(ws)$id
+		if(length(downstream) > 1)
+			stop("downstream=Inf is only supported in watersheds with a single outlet")
+	}
+	if(is.infinite(upstream)) {
+		stop("upstream=Inf is not supported yet")
+	}
+	connected <- connectCPP(dsPixes, upstream, downstream)
 	if(length(connected) == 0)
 		stop("The points are not connected")
 	return(connected)
@@ -344,5 +352,66 @@ renumberReaches <- function(rIDs) {
 extract <- function(ws, x) {
 	ras <- raster::rasterFromXYZ(ws[,c('x', 'y', 'id')])
 	raster::extract(ras, x)
+}
+
+
+#' Construct a matrix identifying the nearest downstream neighbor from a list of sites
+#' 
+#' @param ws A watershed
+#' @param x A vector of pixel IDs
+#' @param names Optional vector of site names
+#' @return A 2-column matrix; the first column gives the ID of a pixel, the second its nearest
+#' downstream neighbor. Pixels in `x` that have no nearest neighbor are excluded.
+#' @export
+nearestDownstreamNeighbor <- function(ws, x, names) {
+	dmat <- downstreamDist(ws, x)
+	res <- do.call(c, apply(dmat, 1, function(x) {
+		if(all(x == 0)) {
+			NULL
+		} else {
+			x[x==0] <- Inf
+			names(x)[which.min(x)]
+		}
+	}))
+	mat <- cbind(from=as.integer(names(res)), to=as.integer(res))
+	if(!missing(names)) {
+		mat <- cbind(from=names[match(mat[,1], x)], to=names[match(mat[,2], x)])
+	}
+	mat
+}
+
+
+#' Build a downstream distance matrix for a list of sites
+#' 
+#' For each site, this function identifies the other sites that are downstream of it and computes
+#' a 'distance' between each site and all of its downstream sites. By default, this is river,
+#' distance, computed by summing the length of stream between the two sites. For any entry in
+#' this distance matrix [i,j], the value is either a nonzero number giving the downstream
+#' distance from site i to site j, or zero, indicating that j is not downstream of i.
+#' 
+#' @param ws A watershed
+#' @param x A vector of pixel ids
+#' @param variable The variable to use for hte distance metric
+#' @param fun The function to apply between each pair of sites
+#' @return A site by site distance [Matrix::sparseMatrix()]
+#' @export
+downstreamDist <- function(ws, x, variable = 'length', fun = sum) {
+	res <- parallel::mclapply(x, function(i) {
+		dspix <- connect(ws, i, Inf)
+		dsSites <- x[which(x %in% dspix & !x==i)]
+		if(length(dsSites) == 0) {
+			NULL
+		} else {
+			t(sapply(dsSites, function(j) {
+				ijPixes <- connect(ws, i, j)
+				c(i, j, fun(ws[ijPixes, variable]))
+			}))
+		}
+	})
+	res <- do.call(rbind, res)
+	res[,1] <- match(res[,1], x)
+	res[,2] <- match(res[,2], x)
+	Matrix::sparseMatrix(i = res[,1], j = res[,2], x = res[,3], 
+		dims = c(length(x), length(x)), dimnames = list(x, x))
 }
 

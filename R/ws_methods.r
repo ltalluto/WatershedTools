@@ -75,3 +75,4 @@ plot.Watershed <- function(x, variable, transform, size = 0.5, xlim, ylim)
 	# x$data[i,j] <- value
 	# x
 ## }
+## also `$<-.Watershed`

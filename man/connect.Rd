@@ -4,14 +4,14 @@
 \alias{connect}
 \title{Returns all points in the watershed connecting two points}
 \usage{
-connect(ws, point1, point2)
+connect(ws, upstream, downstream)
 }
 \arguments{
 \item{ws}{Watershed object}
 
-\item{point1}{ID number of upstream point}
+\item{upstream}{ID number of upstream point; if Inf ALL upstream pixels will be returned}
 
-\item{point2}{ID of downstream point}
+\item{downstream}{ID of downstream point; if Inf ALL downstream pixels will be returned}
 }
 \value{
 vector of pixel ids

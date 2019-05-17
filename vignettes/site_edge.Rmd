@@ -12,7 +12,7 @@ First load the package and double check the version.
 ```{r}
 library("WatershedTools")
 packageVersion("WatershedTools")
-## must be >= 1.0.0.9004
+## must be >= 1.0.0.9007
 ```
 
 Then read in the data and your sites. You can check the initial reaches using the plot function:
@@ -79,4 +79,10 @@ pl <- plot(vjosa, variable = "reachTest", transform = as.factor)
 pl <- pl + geom_point(data = as.data.frame(sites)[testPoint,,drop=FALSE], 
                       aes(x=x, y=y), color='cyan', size=1)
 pl
+```
+
+Finally, you can construct a from-to matrix easily. Use the names argument to convert back from site IDs to the original site names:
+```{r}
+fromTo <- nearestDownstreamNeighbor(vjosa, siteIDs, names = sites$siteName)
+fromTo
 ```
