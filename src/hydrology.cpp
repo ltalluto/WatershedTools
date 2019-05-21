@@ -69,22 +69,28 @@ std::vector<int> connectCPP(NumericVector dsPixel, int upstream, int downstream)
 //' @param diPixel  A vector of downstream pixels, diPixel[i] is downstream from pixel i
 //' @param nx The total number of pixels in the network
 //' @param value The value to be added (e.g., length) when computing distance
+//' @return A matrix with dimensions `length(x)` by `nrow(ws)`
 // [[Rcpp::export]]
 NumericMatrix dmat(NumericVector x, NumericVector dsPixel, int nx, NumericVector value) {
-	NumericMatrix distance(nx, x.size(), NA);
+	NumericMatrix distance(x.size(), nx);
+	std::fill(distance.begin(), distance.end(), NumericVector::get_na());
 
-	for(NumericVector::iterator xi = x.begin(); xi != x.end(); ++xi) {
-		int i = (int) (*xi) - 1; // -1 to correct for C++ indexing
+	int count = 0;
+	for(int xi = 0; xi < x.size(); ++xi) {
+		int i = (int) x[xi] - 1; // -1 to correct for C++ indexing
 		int j = i;
-		int total = 0;
-		distance(i, j) = total;
+		double total = 0;
+		distance(xi, j) = total;
 		while(j > 0) {
 			total += value(j);
-			j = (int) dsPixel(j); 
-			distance(i, j) = total;
-			NumericVector::iterator inx std::find(x.begin(), x.end(), j);
+			j = (int) dsPixel(j) - 1;
+			distance(xi, j) = total;
+			NumericVector::iterator inx = std::find(x.begin(), x.end(), j);
 			if(inx != x.end())
-				distance(j, inx - x.begin()) = -1 * total;
+				distance(inx - x.begin(), xi) = -1 * total;
+			count++;
+			if(count > nx*x.size())
+				stop("Topology error");
 		}
 	}
 	return distance;

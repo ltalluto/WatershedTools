@@ -30,3 +30,14 @@ connectCPP <- function(dsPixel, upstream, downstream) {
     .Call('_WatershedTools_connectCPP', PACKAGE = 'WatershedTools', dsPixel, upstream, downstream)
 }
 
+#' Construct a distance matrix between one set of points and another
+#'
+#' @param x  Set of pixels to which to compute distance
+#' @param diPixel  A vector of downstream pixels, diPixel[i] is downstream from pixel i
+#' @param nx The total number of pixels in the network
+#' @param value The value to be added (e.g., length) when computing distance
+#' @return A matrix with dimensions `length(x)` by `nrow(ws)`
+dmat <- function(x, dsPixel, nx, value) {
+    .Call('_WatershedTools_dmat', PACKAGE = 'WatershedTools', x, dsPixel, nx, value)
+}
+

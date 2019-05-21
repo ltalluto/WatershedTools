@@ -191,11 +191,12 @@ discharge_scaling <- function(A, calib)
 	calib$logQ <- log(calib$Q)
 
 	if(nrow(calib) == 1) {
-		logB_mu <- log(calib$Q) - mpar * log(calib$A)
+		logB_mu <- log(calib$Q) - m_mu * log(calib$A)
 		Q <- exp(logB_mu + m_mu * log(A))
 	} else {
 		if(!requireNamespace("rstanarm"))
-			stop("This functionality requires the rstanarm package; please install it and try again")
+			stop("This functionality requires the rstanarm package; 
+				please install it and try again")
 		# stan doesn't play nice with data tables
 		calib <- as.data.frame(calib)
 		fit <- rstanarm::stan_glm(logQ ~ logA, data = calib,

@@ -10,27 +10,34 @@
 #' @return A watershed object
 #' @export
 Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, otherLayers) {
+	## drainage will be added later, after it is fixed by WSConnectivity
 	dataRasters <- list()
 	if(!missing(elevation)) dataRasters$elevation <- elevation
 	if(!missing(accumulation)) dataRasters$accumulation <- accumulation
 	if(!missing(catchmentArea)) dataRasters$catchmentArea <- catchmentArea
 	if(!missing(otherLayers)) dataRasters$otherLayers <- otherLayers
-	allRasters <- lapply(dataRasters, function(x) {
+	layerStack <- lapply(dataRasters, function(x) {
 		if(!raster::compareRaster(stream, x, stopiffalse = FALSE))
 			x <- raster::crop(x, stream)
 		raster::mask(x, stream)
 	})
-	allRasters <- raster::stack(allRasters)
 
-	## create pixel IDs
-	allRasters$reachID <- allRasters$id <- stream
+	## create pixel IDs and add other layers, if present
+	allRasters <- raster::stack(stream, stream)
+	names(allRasters) <- c('reachID', 'id')
+	if(length(layerStack) > 0) {
+		layerStack <- raster::stack(layerStack)
+		allRasters <- raster::addLayer(allRasters, layerStack)
+	}
 	maskIndices <- which(!is.na(raster::values(stream)))
 	allRasters$id[maskIndices] <- 1:length(maskIndices)
 
 	allSPDF <- rasterToSPDF(allRasters, complete.cases = TRUE)
+	if(!raster::compareRaster(allRasters, drainage, stopiffalse = FALSE))
+		drainage <- raster::crop(drainage, allRasters)
 	adjacency <- WSConnectivity(drainage, allRasters$id)
 	allSPDF <- merge(allSPDF, adjacency$drainage, by = 'id', all.x = TRUE)
-	allSPDF$length <- WSComputeLength(allSPDF$drainage, res(drainage))
+	allSPDF$length <- WSComputeLength(allSPDF$drainage, raster::res(drainage))
 
 	wsobj <- list(data = allSPDF, adjacency = adjacency$adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
@@ -391,7 +398,7 @@ nearestDownstreamNeighbor <- function(ws, x, names) {
 #' 
 #' @param ws A watershed
 #' @param x A vector of pixel ids
-#' @param variable The variable to use for hte distance metric
+#' @param variable The variable to use for the distance metric
 #' @param fun The function to apply between each pair of sites
 #' @return A site by site distance [Matrix::sparseMatrix()]
 #' @export
@@ -416,62 +423,24 @@ downstreamDist <- function(ws, x, variable = 'length', fun = sum) {
 }
 
 
-#' Probably blows up your computer. Possibly your city
-pointBySiteDist <- function(ws, x, variable = 'length') {
+#' Compute a site by pixel accumulation matrix
+#' 
+#' The default behavior computes distance, where positive numbers indicate downstream
+#' distances and negative numbers indicate upstream distances. Other variables can also
+#' be used, but in all cases the values will be summed to compute the 'distance'
+#' 
+#' Upstream distances do NOT include intermediate pixels; they only include pixels in `x`
+#' 
+#' @param ws A Watershed
+#' @param x A vector of pixel ids from which to compute the distance 
+#' @param variable The variable to use for the distance
+#' @return A matrix with dimensions `length(x)` by `nrow(ws)`
+#' @export
+siteByPixel <- function(ws, x, variable = 'length') {
 	dsPixes <- downstreamPixelIds(ws)
-	dmat(x, dsPixes, nrow(ws$data), ws[,variable])
+	dm <- dmat(x, dsPixes, nrow(ws$data), ws[,variable])
+	rownames(dm) <- x
+	colnames(dm) <- ws[,'id']
+	dm
 }
 
-
-
-
-#' Interpolate a variable between points
-#' 
-#' If `x` is a vector, it must be the same length as `points`; each entry in `x` is taken
-#' to match a location in `points`. In this case, the function will return a vector with one
-#' value for each point in `ws`.
-#' 
-#' If `x` is a matrix, then the first dimension (i.e., rows) is taken to be space; the number
-#' of rows must match the length of `points`. The columns are taken to represent a different
-#' dimension (e.g., time). The variable `times` is optional and allows the user to specify
-#' at what times (e.g., in minutes) the observations were taken; if present, it must have
-#' the same length as ncol(x). `times_out` then controls the times at which output is
-#' provided (i.e., the number of columns in the returned matrix); the default is to do no
-#' interpolation in the second dimension.
-#' 
-#' If interpolation is required in both dimensions, locations with data will first be 
-#' interpolated in time (with no extrapolation beyond first/last times). Then all locations
-#' with missing values will be interpolated in space.
-#' 
-#' @param ws A watershed
-#' @param x A vector or matrix of the variable to interpolate, see 'details'
-#' @param points A vector of points at which observations in x are made; see 'details'
-#' @param weight A variable in `ws` to be used as weights for the interpolation
-#' @param times The times
-#' @param method Should linear or spline interpolation be used?
-#' @return A vector or matrix (as in `x`) of interpolated values
-interpolate <- function(ws, x, points, times, times_out = times, weight = 'length', 
-	method = c('linear', 'spline')) {
-	## checks
-	if(is.matrix(x)) {
-		if(nrow(x) != length(points))
-			stop("nrow(x) == length(points) is FALSE")
-		if(!missing(times) && ncol(x) != length(times)) {
-			stop("ncol(x) must equal length(times) if times is specified")
-		}
-	} else {
-		if(length(x) != length(points))
-			stop("length(x) must equal length(points)")
-	}
-
-	if(is.matrix(x) && !missing(times)) {
-		if()
-		if(any(is.na(x)) || !identical(times, times_out)) {
-			resTime <- matrix(NA, nrow=nrow(x), ncol=length(times_out))
-		}
-	}
-}
-
-
-
-interp_point <- function()

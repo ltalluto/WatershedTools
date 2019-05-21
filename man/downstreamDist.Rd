@@ -11,7 +11,7 @@ downstreamDist(ws, x, variable = "length", fun = sum)
 
 \item{x}{A vector of pixel ids}
 
-\item{variable}{The variable to use for hte distance metric}
+\item{variable}{The variable to use for the distance metric}
 
 \item{fun}{The function to apply between each pair of sites}
 }

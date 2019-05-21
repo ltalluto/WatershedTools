@@ -23,16 +23,14 @@ test_that("transport works with lsoda & euler", {
 
 test_that("Hydraulic geometry scaling", {
 	ca <- 896 * 1000^2 ## 896 square kilometers
-	expect_error(Q <- discharge_scaling(ca), regex=NA)
-	expect_equal(Q, 14.6429, tolerance=1e-4)
-	expect_error(Q2 <- discharge_scaling(ca, calib=list(A=100 * 1000^2, Q = 4.5)), regex=NA)
-	expect_equal(Q2, 24.8893, tolerance = 1e-2)
+	expect_error(Q <- discharge_scaling(ca, calib=data.frame(A=100 * 1000^2, Q = 4.5)), regex=NA)
+	expect_equal(Q, 24.8893, tolerance = 1e-2)
 
 	expect_error(hg <- hydraulic_geometry(Q), regex=NA)
 	expect_equal(hg$discharge[1], Q)
-	expect_equal(hg$velocity[1], 0.41683, tolerance = 1e-5)
-	expect_equal(hg$depth[1], 0.89950, tolerance = 1e-5)
-	expect_equal(hg$width[1], 40.25818, tolerance = 1e-5)
+	expect_equal(hg$velocity[1], 0.4848648, tolerance = 1e-5)
+	expect_equal(hg$depth[1], 1.051318, tolerance = 1e-5)
+	expect_equal(hg$width[1], 50.3857, tolerance = 1e-5)
 })
 
 test_that("Simple transport-reaction model", {

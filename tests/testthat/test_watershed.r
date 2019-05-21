@@ -18,3 +18,13 @@ test_that("Creation of a basic Watershed proceeds without error", {
 	streamCrop <- cropToCatchment(coords, streamRaster = streamRas, drainage = "drain", gs = gs)
 	expect_error(testWS <- Watershed(streamCrop, drainage), regex=NA)
 })
+
+
+test_that("Topology functions", {
+	skip_on_cran()
+	testWS <- readRDS(system.file("testdata/testWatershed.rds", package="WatershedTools"))
+	points <- confluences(testWS)[1:10, 'id']
+	expect_error(dm <- siteByPixel(testWS, points), regex=NA)
+	expect_equal(sum(dm, na.rm=TRUE), 71.558, tolerance = 0.001)
+})
+

@@ -36,10 +36,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dmat
+NumericMatrix dmat(NumericVector x, NumericVector dsPixel, int nx, NumericVector value);
+RcppExport SEXP _WatershedTools_dmat(SEXP xSEXP, SEXP dsPixelSEXP, SEXP nxSEXP, SEXP valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type dsPixel(dsPixelSEXP);
+    Rcpp::traits::input_parameter< int >::type nx(nxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type value(valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmat(x, dsPixel, nx, value));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_WatershedTools_dCdt_transport_cpp", (DL_FUNC) &_WatershedTools_dCdt_transport_cpp, 8},
     {"_WatershedTools_connectCPP", (DL_FUNC) &_WatershedTools_connectCPP, 3},
+    {"_WatershedTools_dmat", (DL_FUNC) &_WatershedTools_dmat, 4},
     {NULL, NULL, 0}
 };
 
