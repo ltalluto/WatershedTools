@@ -25,3 +25,5 @@ all(sort(conn1$downstream) == sort(conn2$downstream))
 # TODO; write proper tests for connectAll
 # TODO; reconcile this with existing connect() function
 # TODO; reconcile this with  dmat; this might be faster and more flexible
+# 		just need to grab all upstream and downstream pixels like this
+#		then sum the lengths by subsetting the ws object
