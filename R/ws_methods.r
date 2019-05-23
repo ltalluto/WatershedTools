@@ -76,3 +76,4 @@ plot.Watershed <- function(x, variable, transform, size = 0.5, xlim, ylim)
 	# x
 ## }
 ## also `$<-.Watershed`
+## also add a subset function
