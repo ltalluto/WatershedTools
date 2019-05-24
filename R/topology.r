@@ -1,26 +1,127 @@
 # #' Produces a site by pixel distance matrix
-# ws_distance <- function(ws, x) {
+ws_distance <- function(ws, x, variable = 'length') {
 
-# 	## the approach here will be to use mclapply on connectAll for each point in x, 
-# 	## get all pixels connected, then sum their lengths (*-1 for upstream)
+	## the approach here will be to use mclapply on connectAll for each point in x, 
+	## get all pixels connected, then sum their lengths (*-1 for upstream)
 
-# 	### argh, no, this won't work
-# 	### the easiest thing to do is to accumulate WHILE extracting with connectCPP
-# 	### but this means I need a CPP way to move upstream
-# 	### perhaps the easiest way to using connectCPP as rewritten, find all upstream headwaters
-# 	### then connect(and compute distance) from them down to the target pixel
-# 	### so for pixel x;
-# 		1. connectWithDist(x, outlet)
-# 		2. connectUpstream(x)
-# 		3. hws <- which(headwaters(ws) %in% connectUpstream(x))
-# 		4. usDists <- -1 * mclapply(hws, connectWithDist(hw, x))
-# 		5. remove redundant info in US dists
-# 		6. make into matrix
-# }
-
-
+	### argh, no, this won't work
+	### the easiest thing to do is to accumulate WHILE extracting with connectCPP
+	### but this means I need a CPP way to move upstream
+	### perhaps the easiest way to using connectCPP as rewritten, find all upstream headwaters
+	### then connect(and compute distance) from them down to the target pixel
+	### so for pixel x;
+		1. connectWithDist(x, outlet)
+		2. connectUpstream(x)
+		3. hws <- which(headwaters(ws) %in% connectUpstream(x))
+		4. usDists <- -1 * mclapply(hws, connectWithDist(hw, x))
+		5. remove redundant info in US dists
+		6. make into matrix
+}
 
 
+
+
+#' Returns all points in the watershed connecting two points
+#' 
+#' This is a simple wrapper to accumulate that only returns the pixels
+#' @param ws Watershed object
+#' @param upstream ID number of upstream point; if Inf ALL upstream pixels will be returned
+#' @param downstream ID of downstream point; if Inf ALL downstream pixels will be returned
+#' 
+#' @return A vector of pixel ids
+#' @export
+connect <- function(ws, upstream, downstream = Inf) {
+	accumulate(ws, upstream, downstream)[,1]
+}
+
+
+#' Returns all points in the watershed connecting two points, accumulating a value between
+#' @param ws Watershed object
+#' @param upstream ID number of upstream point; if Inf ALL upstream pixels will be returned
+#' @param downstream ID of downstream point; if Inf ALL downstream pixels will be returned
+#' @param variable The variable to accumulate
+#' @param parallel Boolean, should parallel processing be used?
+#' @return A matrix, first column connected pixelIDs, second the accumulated variable
+#' @export
+accumulate <- function(ws, upstream, downstream = Inf, variable = 'length', parallel = FALSE) {
+	if(parallel && !requireNamespace("parallel"))
+		parallel <- FALSE
+	dsPixes <- downstreamPixelIds(ws)
+	if(is.infinite(downstream))
+		downstream <- outlets(ws)$id
+	if(is.infinite(upstream)) {
+		rid <- ws[downstream, 'reachID']
+		tops <- headwaters(ws)[,'id']
+		upReaches <- which(ws$reach_connectivity[rid,] == 1)
+		upstream <- tops[ws[tops, "reachID"] %in% upReaches]
+	}
+	if(length(downstream == 1)) {
+		if(length(upstream) == 1) {
+			accum <- do.call(cbind, connectCPP(dsPixes, upstream, downstream, ws[, variable]))
+		} else {
+			if(parallel) {
+				accum <- do.call(rbind, 
+					parallel::mclapply(upstream, function(x) 
+						accumulate(ws, x, downstream, variable)))
+			} else {
+				accum <- do.call(rbind, lapply(upstream, function(x) 
+						accumulate(ws, x, downstream, variable)))
+			}
+		}
+	} else {
+		accum <- do.call(rbind, 
+				lapply(downstream, function(x) accumulate(ws, upstream, x, variable, parallel)))
+	}
+	return(accum)
+}
+
+
+#' Accumulate a variable for between pixels
+#' 
+#' @param ws A watershed
+#' @param x A focal site
+#' @param y A second site
+#' @param length The variable to accumulate
+#' @return a vector of accumulated values (or NA for unconnected pixels). #' Accumulated values
+#' will be positive going downstream, negative going upstream
+accumulateBetween <- function(ws, x, y, variable = 'length') {
+	rid_x <- ws[x, 'reachID']
+	rid_y <- ws[y, 'reachID']
+
+	if(rid_x == rid_y) {
+		## handle special case when they are in the same reach
+	} else {
+		upReaches_x <- which(ws$reach_connectivity[rid_x,] == 1)
+		upReaches_y <- which(ws$reach_connectivity[rid_y,] == 1)
+		downReaches_x <- which(ws$reach_connectivity[,rid_x] == 1)
+		downReaches_y <- which(ws$reach_connectivity[,rid_y] == 1)
+
+		## check if they are not connected
+		if(!(rid_y %in% downReaches_x) & !(rid_x %in% downReaches_y))
+			return(NA)
+
+		inReachLens_x <- accumInReach(ws, x, variable)
+		inReachLens_y <- accumInReach(ws, y, variable)
+
+		## y is downstream of x
+		if(rid_y %in% downReaches_x) {
+			sharedReaches <- downReaches_x[downReaches_x %in% upReaches_y]
+			inReachSum <- sum(inReachLens_x[inReachLens_x > 0]) + 
+					abs(sum(inReachLens_y[inReachLens_y < 0]))
+			mult <- 1					
+		} else if(rid_x %in% downReaches_y) {
+			## y is upstream of x
+			sharedReaches <- downReaches_y[downReaches_y %in% upReaches_x]
+			inReachSum <- abs(sum(inReachLens_x[inReachLens_x < 0])) + 
+					sum(inReachLens_y[inReachLens_y > 0])
+			mult <- -1					
+		}
+
+		pixes <- which(ws$data$reachID %in% sharedReaches)
+		res <- mult * (sum(ws[pixes, variable]) + inReachSum)
+	}
+	res
+}
 
 
 
@@ -33,8 +134,6 @@
 #' will be positive going downstream, negative going upstream
 accumulateOne <- function(ws, x, variable = 'length') {
 	rid <- ws[x, 'reachID']
-	inreach <- ws$data$id[ws[,'reachID'] == rid]
-
 	upReaches <- which(ws$reach_connectivity[rid,] == 1)
 	upPixes <- which(ws[,'reachID'] %in% upReaches)
 	downReaches <- which(ws$reach_connectivity[,rid] == 1)

@@ -228,30 +228,6 @@ downstreamPixelIds <- function(ws) {
 }
 
 
-#' Returns all points in the watershed connecting two points
-#' @param ws Watershed object
-#' @param upstream ID number of upstream point; if Inf ALL upstream pixels will be returned
-#' @param downstream ID of downstream point; if Inf ALL downstream pixels will be returned
-#' 
-#' @return vector of pixel ids
-#' @export
-connect <- function(ws, upstream, downstream) {
-	dsPixes <- downstreamPixelIds(ws)
-	if(is.infinite(downstream)) {
-		downstream <- outlets(ws)$id
-		if(length(downstream) > 1)
-			stop("downstream=Inf is only supported in watersheds with a single outlet")
-	}
-	if(is.infinite(upstream)) {
-		stop("upstream=Inf is not supported yet")
-	}
-	connected <- connectCPP(dsPixes, upstream, downstream)
-	if(length(connected) == 0)
-		stop("The points are not connected")
-	return(connected)
-}
-
-
 #' Splits a reachID at selected points
 #' @param ws A watershed object
 #' @param points A vector of ids at which to split reaches
