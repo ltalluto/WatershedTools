@@ -24,15 +24,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // connectCPP
-std::vector<int> connectCPP(NumericVector dsPixel, int upstream, int downstream);
-RcppExport SEXP _WatershedTools_connectCPP(SEXP dsPixelSEXP, SEXP upstreamSEXP, SEXP downstreamSEXP) {
+List connectCPP(NumericVector dsPixel, int upstream, int downstream, NumericVector value);
+RcppExport SEXP _WatershedTools_connectCPP(SEXP dsPixelSEXP, SEXP upstreamSEXP, SEXP downstreamSEXP, SEXP valueSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type dsPixel(dsPixelSEXP);
     Rcpp::traits::input_parameter< int >::type upstream(upstreamSEXP);
     Rcpp::traits::input_parameter< int >::type downstream(downstreamSEXP);
-    rcpp_result_gen = Rcpp::wrap(connectCPP(dsPixel, upstream, downstream));
+    Rcpp::traits::input_parameter< NumericVector >::type value(valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(connectCPP(dsPixel, upstream, downstream, value));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -53,7 +54,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_WatershedTools_dCdt_transport_cpp", (DL_FUNC) &_WatershedTools_dCdt_transport_cpp, 8},
-    {"_WatershedTools_connectCPP", (DL_FUNC) &_WatershedTools_connectCPP, 3},
+    {"_WatershedTools_connectCPP", (DL_FUNC) &_WatershedTools_connectCPP, 4},
     {"_WatershedTools_dmat", (DL_FUNC) &_WatershedTools_dmat, 4},
     {NULL, NULL, 0}
 };

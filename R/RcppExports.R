@@ -24,10 +24,19 @@ dCdt_transport_cpp <- function(t, y, adjacencyQ, qout, qin, lateral, csArea, dx)
     .Call('_WatershedTools_dCdt_transport_cpp', PACKAGE = 'WatershedTools', t, y, adjacencyQ, qout, qin, lateral, csArea, dx)
 }
 
-#' Connect points in a watershed
+#' Connect points in a watershed, accumulating a value as we go
+#'
+#' The values and ds pixels should match; i.e., values[i] is the value for pixel i, 
+#' and dsPixel[i] is that pixel's downstream pixel
+#'
 #' @param dsPixel A vector of downstream pixels, diPixel[i] is downstream from pixel i
-connectCPP <- function(dsPixel, upstream, downstream) {
-    .Call('_WatershedTools_connectCPP', PACKAGE = 'WatershedTools', dsPixel, upstream, downstream)
+#' @param upstream The id of the upstream point
+#' @param downstream The id of the downstream point
+#' @param value A vector of values to accumulate
+#' @return A list, the first entry is the connected pixels, the second the accumulation
+#' up to (but excluding) each pixel
+connectCPP <- function(dsPixel, upstream, downstream, value) {
+    .Call('_WatershedTools_connectCPP', PACKAGE = 'WatershedTools', dsPixel, upstream, downstream, value)
 }
 
 #' Construct a distance matrix between one set of points and another

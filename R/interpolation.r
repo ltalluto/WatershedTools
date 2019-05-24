@@ -32,39 +32,39 @@
 #' @param times_out Optional vector of target times. See "details." 
 #' @param distMatrix Optional distance matrix of the sites to all points in the watershed, as
 #' created by [downstreamDist()]
-interpolate <- function(ws, values, sites, times, sites_out, times_out, distMatrix) {
-	if(missing(sites) & missing(times))
-		stop("either sites or times must be specified")
+# interpolate <- function(ws, values, sites, times, sites_out, times_out, distMatrix) {
+# 	if(missing(sites) & missing(times))
+# 		stop("either sites or times must be specified")
 
-	if(!missing(sites) && length(values) != length(sites))
-		stop("sites and values must have the same length")
+# 	if(!missing(sites) && length(values) != length(sites))
+# 		stop("sites and values must have the same length")
 
-	if(!missing(times) && length(values) != length(times))
-		stop("times and values must have the same length")
+# 	if(!missing(times) && length(values) != length(times))
+# 		stop("times and values must have the same length")
 
-	if(!missing(sites) & missing(distMatrix))
-		distMatrix <- downstreamDist(ws, sites)
+# 	if(!missing(sites) & missing(distMatrix))
+# 		distMatrix <- downstreamDist(ws, sites)
 
-	if(!missing(times) & missing(sites)) {
-		if(missing(times_out))
-			stop("times_out must be provided if only interpolating in time")
-		result <- matrix(approx(x = times, y = values, xout = times_out), nrow=1)
+# 	if(!missing(times) & missing(sites)) {
+# 		if(missing(times_out))
+# 			stop("times_out must be provided if only interpolating in time")
+# 		result <- matrix(approx(x = times, y = values, xout = times_out), nrow=1)
 
-	} else if(!missing(sites) & missing(times)) {
-		if(missing(sites_out))
-			sites_out <- ws[,'id']
+# 	} else if(!missing(sites) & missing(times)) {
+# 		if(missing(sites_out))
+# 			sites_out <- ws[,'id']
 
-		STEPS for each site_out
-		1. compute nearest downstream neighbor site
-		2. compute all independent upstream neighbor sites -- this requires a complete site by pixel distMatrix
-		3. weithted avg, where weights are (Q_upstream/Q_downstream) * (1/d^2)
-	}
+# 		STEPS for each site_out
+# 		1. compute nearest downstream neighbor site
+# 		2. compute all independent upstream neighbor sites -- this requires a complete site by pixel distMatrix
+# 		3. weithted avg, where weights are (Q_upstream/Q_downstream) * (1/d^2)
+# 	}
 
-	return(result)
-}
+# 	return(result)
+# }
 
-#' @param ws A watershed
-#' @param
-interpSpace <- function(ws, values, sites, distMatrix) {
+# #' @param ws A watershed
+# #' @param
+# interpSpace <- function(ws, values, sites, distMatrix) {
 
-}
+# }

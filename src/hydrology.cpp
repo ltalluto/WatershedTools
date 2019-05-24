@@ -46,20 +46,37 @@ NumericVector multiply_sparse(NumericMatrix mat, NumericVector y)
 	return output;
 }
 
-//' Connect points in a watershed
+//' Connect points in a watershed, accumulating a value as we go
+//'
+//' The values and ds pixels should match; i.e., values[i] is the value for pixel i, 
+//' and dsPixel[i] is that pixel's downstream pixel
+//'
 //' @param dsPixel A vector of downstream pixels, diPixel[i] is downstream from pixel i
+//' @param upstream The id of the upstream point
+//' @param downstream The id of the downstream point
+//' @param value A vector of values to accumulate
+//' @return A list, the first entry is the connected pixels, the second the accumulation
+//' up to (but excluding) each pixel
 // [[Rcpp::export]]
-std::vector<int> connectCPP(NumericVector dsPixel, int upstream, int downstream) {
+List connectCPP(NumericVector dsPixel, int upstream, int downstream, 
+		NumericVector value) {
 	std::vector<int> connectedPts;
+	std::vector<double> distance;
+	double accum = 0.0;
 	int current = upstream;
 	connectedPts.push_back(current);
+	distance.push_back(accum);
 	while(current != downstream && !Rcpp::NumericVector::is_na(current)) {
+		accum += value(current - 1);
 		current = dsPixel(current - 1); // -1 to correct for C++ indexing
 		connectedPts.push_back(current);
+		distance.push_back(accum);
 	}
-	if(Rcpp::NumericVector::is_na(current) && !Rcpp::NumericVector::is_na(dsPixel(downstream)))
+	if(Rcpp::NumericVector::is_na(current) && !Rcpp::NumericVector::is_na(dsPixel(downstream))) {
 		connectedPts.clear();
-	return connectedPts;
+		distance.clear();
+	}
+	return Rcpp::List::create(connectedPts, distance);
 }
 
 

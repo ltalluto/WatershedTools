@@ -2,13 +2,24 @@
 % Please edit documentation in R/RcppExports.R
 \name{connectCPP}
 \alias{connectCPP}
-\title{Connect points in a watershed}
+\title{Connect points in a watershed, accumulating a value as we go}
 \usage{
-connectCPP(dsPixel, upstream, downstream)
+connectCPP(dsPixel, upstream, downstream, value)
 }
 \arguments{
 \item{dsPixel}{A vector of downstream pixels, diPixel[i] is downstream from pixel i}
+
+\item{upstream}{The id of the upstream point}
+
+\item{downstream}{The id of the downstream point}
+
+\item{value}{A vector of values to accumulate}
+}
+\value{
+A list, the first entry is the connected pixels, the second the accumulation
+up to (but excluding) each pixel
 }
 \description{
-Connect points in a watershed
+The values and ds pixels should match; i.e., values[i] is the value for pixel i, 
+and dsPixel[i] is that pixel's downstream pixel
 }

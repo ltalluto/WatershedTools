@@ -42,7 +42,9 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 
 	wsobj <- list(data = allSPDF, adjacency = adjacency$adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
-	wsobj$connectivity <- reachByReachConn(wsobj, self = FALSE)
+	wsobj$data$reachID <- renumberReaches(wsobj$data$reachID)
+	wsobj$reach_adjacency <- reachByReachAdj(wsobj)
+	wsobj$reach_connectivity <- reachByReachConn(wsobj, self = FALSE)
 	return(wsobj)
 }
 
@@ -308,7 +310,7 @@ siteByReach <- function(ws, points, names, self = TRUE) {
 #' @return A [Matrix::sparseMatrix()]
 #' @keywords internal
 reachByReachConn <- function(ws, self = TRUE) {
-	adj <- reachByReachAdj(ws)
+	adj <- ws$reach_adjacency
 	if(self)
 		diag(adj) <- 1
 	for(i in 1:nrow(adj))
