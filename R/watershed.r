@@ -38,9 +38,11 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	adjacency <- WSConnectivity(drainage, allRasters$id)
 	allSPDF <- merge(allSPDF, adjacency$drainage, by = 'id', all.x = TRUE)
 	allSPDF$length <- WSComputeLength(allSPDF$drainage, raster::res(drainage))
+	allSPDF$reachID <- renumberReaches(allSPDF$reachID)
 
 	wsobj <- list(data = allSPDF, adjacency = adjacency$adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
+	wsobj$connectivity <- reachByReachConn(wsobj, self = FALSE)
 	return(wsobj)
 }
 
@@ -214,11 +216,13 @@ outlets <- function(ws) {
 #' @export
 downstreamPixelIds <- function(ws) {
 	mat <- Matrix::which(ws$adjacency == 1, arr.ind = TRUE)
-	# rearrange so the UPSTREAM pixels (second column) indicate the row number + 1
+	endpt <- Matrix::which(Matrix::colSums(ws$adjacency) == 0)
+	mat <- rbind(mat, c(NA, endpt))
+	# rearrange so the UPSTREAM pixels (second column) indicate the row number
 	mat <- mat[order(mat[,2]),]
-	if(!all(mat[,2] == 2:(nrow(mat)+1)))
+	if(!all(mat[,2] == 1:nrow(mat)))
 		stop("There is an error with the topology")
-	c(NA, mat[,1])
+	mat[,1]
 }
 
 

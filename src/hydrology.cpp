@@ -53,11 +53,11 @@ std::vector<int> connectCPP(NumericVector dsPixel, int upstream, int downstream)
 	std::vector<int> connectedPts;
 	int current = upstream;
 	connectedPts.push_back(current);
-	while(current != downstream && current > 1) {
+	while(current != downstream && !Rcpp::NumericVector::is_na(current)) {
 		current = dsPixel(current - 1); // -1 to correct for C++ indexing
 		connectedPts.push_back(current);
 	}
-	if(current == 1 && downstream != 1)
+	if(Rcpp::NumericVector::is_na(current) && !Rcpp::NumericVector::is_na(dsPixel(downstream)))
 		connectedPts.clear();
 	return connectedPts;
 }
