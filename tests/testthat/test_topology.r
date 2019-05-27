@@ -2,12 +2,20 @@ setwd("..")
 library(devtools)
 load_all()
 
+library(ggplot2)
+
 ws <- readRDS("~/work/projects/metabolism/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
-x <- 1369
-y <- 20
+x <- c(1369, 22506, 13792, 8, 44100, 38600)
+pl <- plot(ws)
+for(i in x)
+	pl <- pl + geom_point(x = ws[i,'x'], y=ws[i,'y'], colour = 'red')
+pl
 
 
-
+## HUH. 44100 produces a NULL when going upstream. WHY>? doiwns is fine
+ws$test <- NA
+ws$data$test[downs[[5]][,1]] <- downs[[5]][,2]
+plot(ws, variable='test')
 
 
 system.time(test1 <- accumulateOne(ws, x, variable = 'length')[y])
