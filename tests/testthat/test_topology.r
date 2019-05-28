@@ -51,3 +51,5 @@
 # 		accumulate
 #		wsDistance
 #		siteByReach
+#		nearestDownstreamNeighbor
+#		downstreamDist

@@ -12,7 +12,7 @@ First load the package and double check the version.
 ```{r}
 library("WatershedTools")
 packageVersion("WatershedTools")
-## must be >= 1.0.0.9007
+## must be >= 1.0.1.9012
 ```
 
 Then read in the data and your sites. You can check the initial reaches using the plot function:
@@ -56,7 +56,7 @@ headSites <- headwaters(vjosa)
 
 The next step is to split and renumber the reaches:
 ```{r}
-vjosa <- splitReaches(vjosa, siteIDs, renumber = TRUE, na_ignore = TRUE)
+vjosa <- splitReaches(vjosa, siteIDs, na_ignore = TRUE)
 pl <- plot(vjosa, variable = "reachID")
 pl <- pl + geom_point(data = as.data.frame(sites), aes(x=x, y=y), color='cyan', size=1)
 pl
