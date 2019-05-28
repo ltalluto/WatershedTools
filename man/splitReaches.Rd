@@ -4,14 +4,12 @@
 \alias{splitReaches}
 \title{Splits a reachID at selected points}
 \usage{
-splitReaches(ws, points, renumber = TRUE, na_ignore = FALSE)
+splitReaches(ws, points, na_ignore = FALSE)
 }
 \arguments{
 \item{ws}{A watershed object}
 
 \item{points}{A vector of ids at which to split reaches}
-
-\item{renumber}{Is it ok to renumber the reaches? (recommended)}
 
 \item{na_ignore}{Logical, if `TRUE` NAs will be dropped from the data. If `FALSE`, any NAs
 in `points` will cause an error.}

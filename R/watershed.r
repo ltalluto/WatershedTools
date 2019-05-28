@@ -231,12 +231,11 @@ downstreamPixelIds <- function(ws) {
 #' Splits a reachID at selected points
 #' @param ws A watershed object
 #' @param points A vector of ids at which to split reaches
-#' @param renumber Is it ok to renumber the reaches? (recommended)
 #' @param na_ignore Logical, if `TRUE` NAs will be dropped from the data. If `FALSE`, any NAs
 #' 		in `points` will cause an error.
 #' @return A modified watershed with new reachIDs
 #' @export
-splitReaches <- function(ws, points, renumber = TRUE, na_ignore = FALSE) {
+splitReaches <- function(ws, points, na_ignore = FALSE) {
 	if(na_ignore & any(is.na(points))) {
 		points <- points[!is.na(points)]
 	} else if(any(is.na(points))) {
@@ -251,7 +250,12 @@ splitReaches <- function(ws, points, renumber = TRUE, na_ignore = FALSE) {
 			ws$data$reachID[chIds] <- max(ws$data$reachID) + 1
 		}
 	}
-	if(renumber) ws$data$reachID <- renumberReaches(ws$data$reachID)
+	
+	# re-create topology
+	ws$data$reachID <- renumberReaches(ws$data$reachID)
+	ws$reach_adjacency <- reachByReachAdj(ws)
+	ws$reach_connectivity <- reachByReachConn(ws, self = FALSE)
+
 	ws
 }
 
