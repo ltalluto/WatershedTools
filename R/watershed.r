@@ -255,28 +255,6 @@ splitReaches <- function(ws, points, renumber = TRUE, na_ignore = FALSE) {
 	ws
 }
 
-#' Produce a site by reach connectivity matrix
-#' 
-#' A value of 1 at indices `[i,j]` indicates that reach `i` is connected to (i.e., downstream of)
-#' reach `j`.
-#' @param ws A watershed object
-#' @param points A vector of pixel id numbers for sites
-#' @param names An optional vector of site names
-#' @param self If TRUE, a reach is considered connected to itself
-#' @return A [Matrix::sparseMatrix()]
-#' @export
-siteByReach <- function(ws, points, names, self = TRUE) {
-	rIDs <- ws[points, 'reachID']
-	conn <- reachByReachConn(ws, self)
-	mat <- conn[rIDs,, drop=FALSE]
-	if(missing(names)) {
-		rownames(mat) <- points
-	} else {
-		rownames(mat) <- names
-	}
-	mat
-}
-
 
 #' Produce a reach by reach connectivity matrix
 #' 

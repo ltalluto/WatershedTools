@@ -47,6 +47,7 @@
 # plot(ws, 'test', transform = function(x) log(abs(x)))
 
 
-# # TODO
-# #	write tests for accumulate
-# #	write tests for wsDistance
+# TESTS TO WRITE
+# 		accumulate
+#		wsDistance
+#		siteByReach
