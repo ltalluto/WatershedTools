@@ -200,8 +200,8 @@ discharge_scaling <- function(A, calib)
 		# stan doesn't play nice with data tables
 		calib <- as.data.frame(calib)
 		fit <- rstanarm::stan_glm(logQ ~ logA, data = calib,
-				prior_intercept = normal(logB_mu, logB_sd),
-				prior = normal(m_mu, m_sd))
+				prior_intercept = rstanarm::normal(logB_mu, logB_sd),
+				prior = rstanarm::normal(m_mu, m_sd))
 		Q <- exp(predict(fit, newdata = data.frame(logA = log(A))))
 	}
 
