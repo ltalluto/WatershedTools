@@ -11,11 +11,21 @@ for(i in x)
 	pl <- pl + geom_point(x = ws[i,'x'], y=ws[i,'y'], colour = 'red')
 pl
 
+test <- wsDistance(ws, x)
 
-## HUH. 44100 produces a NULL when going upstream. WHY>? doiwns is fine
-ws$test <- NA
-ws$data$test[downs[[5]][,1]] <- downs[[5]][,2]
-plot(ws, variable='test')
+i <- 0
+
+i <- i+1
+ws$data$test <- NA
+ws$data$test[test[[1]][[i]][,1]] <- test[[1]][[i]][,2]
+ws$data$test[test[[2]][[i]][,1]] <- -1 * test[[2]][[i]][,2]
+plot(ws, variable = 'test') + geom_point(x = ws[x[i],'x'], y=ws[x[i],'y'], 
+		colour = 'red', size=2)
+
+
+x <- 44100
+
+
 
 
 system.time(test1 <- accumulateOne(ws, x, variable = 'length')[y])
@@ -37,8 +47,6 @@ ws$data$test <- test
 plot(ws, 'test', transform = function(x) log(abs(x)))
 
 
-# TODO; write proper tests for connectAll
-# TODO; reconcile this with existing connect() function
-# TODO; reconcile this with  dmat; this might be faster and more flexible
-# 		just need to grab all upstream and downstream pixels like this
-#		then sum the lengths by subsetting the ws object
+# TODO
+#	write tests for accumulate
+#	write tests for wsDistance
