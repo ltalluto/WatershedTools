@@ -61,7 +61,7 @@ accumulate <- function(ws, upstream, downstream = Inf, direction = c("down", "up
 	if(is.infinite(upstream)) {
 		rid <- ws[downstream, 'reachID']
 		tops <- headwaters(ws)[,'id']
-		upReaches <- which(ws$reach_connectivity[rid,] == 1)
+		upReaches <- Matrix::which(ws$reach_connectivity[rid,] == 1)
 		if(rid %in% ws[tops, 'reachID'])
 			upReaches <- c(upReaches, rid)
 		upstream <- tops[ws[tops, "reachID"] %in% upReaches]

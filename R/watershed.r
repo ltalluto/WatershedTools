@@ -348,6 +348,32 @@ nearestDownstreamNeighbor <- function(ws, x, names) {
 }
 
 
+#' Construct a matrix identifying the nearest downstream neighbor from a list of sites
+#' 
+#' @param ws A watershed
+#' @param x A vector of pixel IDs
+#' @param names Optional vector of site names
+#' @return A 2-column matrix; the first column gives the ID of a pixel, the second its nearest
+#' downstream neighbor. Pixels in `x` that have no nearest neighbor are excluded.
+#' @export
+nearestDownstreamNeighbor2 <- function(ws, x, names) {
+	dmat <- wsDistance(ws, x)
+	dmat[dmat <= 0] <- NA
+	res <- do.call(c, apply(dmat, 1, function(x) {
+		if(all(is.na(x))) {
+			NULL
+		} else {
+			names(x)[which.min(x)]
+		}
+	}))
+	mat <- cbind(from=as.integer(names(res)), to=as.integer(res))
+	if(!missing(names)) {
+		mat <- cbind(from=names[match(mat[,1], x)], to=names[match(mat[,2], x)])
+	}
+	mat
+}
+
+
 #' Build a downstream distance matrix for a list of sites
 #' 
 #' For each site, this function identifies the other sites that are downstream of it and computes
