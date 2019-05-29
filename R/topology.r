@@ -123,7 +123,7 @@ siteByReach <- function(ws, points, names, self = TRUE) {
 #' @return A 2-column matrix; the first column gives the ID of a pixel, the second its nearest
 #' downstream neighbor. Pixels in `x` that have no nearest neighbor are excluded.
 #' @export
-nearestDownstreamNeighbor <- function(ws, x, names) {
+nearestDownstreamNeighbor <- function(ws, x, names = x) {
 	dmat <- downstreamDist(ws, x)
 	res <- do.call(c, apply(dmat, 1, function(x) {
 		if(all(x == 0)) {
@@ -177,3 +177,72 @@ downstreamDist <- function(ws, x, variable = 'length', fun = sum) {
 		dims = c(length(x), length(x)), dimnames = list(x, x))
 }
 
+
+
+#' Find the nearest neighbors for a focal pixel among a list of sites
+#' 
+#' For a list of `sites`, this function first computes a distance matrix(if not specified),
+#' then finds the nearest upstream and downstream neighbors for focal pixels `x`. Note that
+#' `x` does not necessarily have to be in the list of sites, they can be anywhere in the watershed.
+#' 
+#' @param ws A watershed, optional unless `distMatrix` is missing
+#' @param x A vector of focal pixels (always required)
+#' @param distMatrix A site by pixel distance matrix, will be computed if not specified
+#' @param sites A list of sites for the distance matrix, required if distMatrix is missing
+#' 
+#' @return A list with a downstream and an upstream element. Each element is a matrix, where
+#' the first column corresponds to the focal pixels in `x`, and the second column lists the
+#' nearest neighbors in `sites`.
+#' @export
+nearestNeighbors <- function(ws, x, distMatrix, sites) {
+	if(missing(distMatrix))
+		distMatrix <- wsDistance(ws, sites)
+
+	if(length(x) > 1) {
+		res <- lapply(x, function(xx) nearestNeighbors(ws, xx, distMatrix))
+		resds <- do.call(rbind, lapply(res, function(xx) xx$downstream))
+		resus <- do.call(rbind, lapply(res, function(xx) xx$upstream))
+		return(list(downstream = resds, upstream = resus))
+	}
+
+	x <- as.character(x)
+
+	# nearest downstream neighbor is easy, there is just one
+	ds <- dsNeighbors(x, distMatrix)
+	ds <- rownames(distMatrix)[which.max(distMatrix[ds,x])]
+	if(length(ds) > 0) {
+		ds <- c(as.integer(x), as.integer(ds))
+	} else
+		ds <- NULL
+
+	# for upstream, we look for upstream neighbors that have no downstream neighbors
+	# within the set of all upstream neighbors (in other words, their only downstream neighbors)
+	# are either the site x or sites downstream of x
+	us <- usNeighbors(x, distMatrix)
+	us_ds <- lapply(us, dsNeighbors, distMatrix = distMatrix[us,])
+	if(length(us_ds) == 0) {
+		us <- character(0)
+	} else
+		us <- us[sapply(us_ds, function(xx) all(is.na(xx)))]
+	if(length(us) > 0) {
+		us <- cbind(as.integer(x), as.integer(us))
+	} else 
+		us <- NULL
+
+
+	list(downstream = ds, upstream = us)
+}
+
+# returns all downstream neighbors given a distance matrix
+#' @keywords internal
+dsNeighbors <- function(x, distMatrix) {
+	nbs <- distMatrix[,x]
+	names(nbs)[which(nbs < 0)]
+}
+
+# returns all upstream neighbors given a distance matrix
+#' @keywords internal
+usNeighbors <- function(x, distMatrix) {
+	nbs <- distMatrix[,x]
+	names(nbs)[which(nbs > 0)]
+}
