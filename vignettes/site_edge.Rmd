@@ -85,4 +85,5 @@ Finally, you can construct a from-to matrix easily. Use the names argument to co
 ```{r}
 fromTo <- nearestDownstreamNeighbor(vjosa, siteIDs, names = sites$siteName)
 fromTo
+
 ```
