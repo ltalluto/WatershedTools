@@ -1,30 +1,23 @@
-# setwd("..")
-# library(devtools)
-# load_all()
+setwd("..")
+library(devtools)
+load_all()
 
-# library(ggplot2)
+library(ggplot2)
 
 # ws <- readRDS("~/work/projects/metabolism/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
-# x <- c(1369, 22506, 13792, 8, 44100, 38600)
-# pl <- plot(ws)
-# for(i in x)
-# 	pl <- pl + geom_point(x = ws[i,'x'], y=ws[i,'y'], colour = 'red')
-# pl
+ws <- readRDS("~/work/projects/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
 
-# test <- wsDistance(ws, x)
+xx <- c(1369, 22506, 13792, 8, 44100, 38600)
+pl <- plot(ws)
+for(i in x)
+	pl <- pl + geom_point(x = ws[i,'x'], y=ws[i,'y'], colour = 'red')
+pl
 
-# i <- 0
+distMatrix <- wsDistance(ws, xx)
+x <- c(897, 43207, 6789)
 
-# i <- i+1
-# ws$data$test <- NA
-# ws$data$test[test[[1]][[i]][,1]] <- test[[1]][[i]][,2]
-# ws$data$test[test[[2]][[i]][,1]] <- -1 * test[[2]][[i]][,2]
-# plot(ws, variable = 'test') + geom_point(x = ws[x[i],'x'], y=ws[x[i],'y'], 
-# 		colour = 'red', size=2)
-
-
-# x <- 44100
-
+test <- nearestNeighbors(ws, x, distMatrix)
+test2 <- nearestNeighbors(ws, x, sites=xx)
 
 
 
@@ -53,3 +46,4 @@
 #		siteByReach
 #		nearestDownstreamNeighbor
 #		downstreamDist
+#		nearestNeighbors

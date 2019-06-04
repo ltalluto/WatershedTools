@@ -4,7 +4,7 @@
 \alias{nearestDownstreamNeighbor}
 \title{Construct a matrix identifying the nearest downstream neighbor from a list of sites}
 \usage{
-nearestDownstreamNeighbor(ws, x, names)
+nearestDownstreamNeighbor(ws, x, names = x)
 }
 \arguments{
 \item{ws}{A watershed}
