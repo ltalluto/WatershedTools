@@ -67,7 +67,8 @@ fillDEM <- function(dem, gs, filledDEM, probs, file = NULL, ...)
 #' 		zero (indicating a portion of a natural depression), or positive. Positive values are 
 #' 		measured counterclockwise from northeast; 1 is northeast, 2 north,, etc through 8 flowing #'	  due east.
 #' @export
-accumulate <- function(dem, threshold = 250, gs, accumulation, drainage, file = NULL, ...)
+drainageAccumulation <- function(dem, threshold = 250, gs, accumulation, drainage, 
+	file = NULL, ...)
 {
 	if(missing(gs)) {
 		gs <- GrassSession(dem, layerName = "dem", ...)
