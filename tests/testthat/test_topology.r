@@ -1,23 +1,62 @@
-setwd("..")
-library(devtools)
-load_all()
+context("Watershed Topology")
+library("WatershedTools")
 
-library(ggplot2)
+ws <- readRDS(system.file("testdata/testWS.rds", package="WatershedTools"))
 
-# ws <- readRDS("~/work/projects/metabolism/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
-ws <- readRDS("~/work/projects/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
+test_that("Accumulation works", {
+	outletID <- outlets(ws)$id
+	hwID <- headwaters(ws)[1,'id']
+	expect_error(accum_outlet_us <- 
+		accumulate(ws, upstream = Inf, downstream = outletID, direction = "up"), regex=NA)
+	expect_error(accum_outlet_ds <- 
+		accumulate(ws, upstream = Inf, downstream = outletID, direction = "down"), regex=NA)
+	expect_error(accum_hw_ds <- 
+		accumulate(ws, upstream = hwID, downstream = Inf, direction = "down"), regex=NA)
+	expect_error(accum_hw_us <- 
+		accumulate(ws, upstream = hwID, downstream = Inf, direction = "up"), regex=NA)
+	expect_error(accum_out_hw_ds <- 
+		accumulate(ws, upstream = hwID, downstream = outletID, direction = "down"), regex=NA)
+	expect_error(accum_out_hw_us <- 
+		accumulate(ws, upstream = hwID, downstream = outletID, direction = "up"), regex=NA)
 
-xx <- c(1369, 22506, 13792, 8, 44100, 38600)
-pl <- plot(ws)
-for(i in x)
-	pl <- pl + geom_point(x = ws[i,'x'], y=ws[i,'y'], colour = 'red')
-pl
+	# from outlet to all headwaters should recover all points
+	expect_identical(sort(accum_outlet_us[,1]), sort(ws[,'id']))
+	expect_identical(sort(accum_outlet_ds[,1]), sort(ws[,'id']))
 
-distMatrix <- wsDistance(ws, xx)
-x <- c(897, 43207, 6789)
+	# from hw to outlet should produce same pixels no matter which direction
+	expect_identical(sort(accum_hw_ds[,1]), sort(accum_hw_us[,1]))
+	expect_identical(sort(accum_out_hw_ds[,1]), sort(accum_out_hw_us[,1]))
+	expect_identical(accum_out_hw_ds, accum_hw_ds)
+	expect_identical(accum_out_hw_us, accum_hw_us)
 
-test <- nearestNeighbors(ws, x, distMatrix)
-test2 <- nearestNeighbors(ws, x, sites=xx)
+	## upstream always negative, downstream always positive
+	expect_gt(0, sum(accum_outlet_us[,2]))
+	expect_gt(0, sum(accum_hw_us[,2]))
+	expect_gt(sum(accum_outlet_ds[,2]), 0)
+	expect_gt(sum(accum_hw_ds[,2]), 0)
+
+})
+
+# setwd("..")
+# library(devtools)
+# load_all()
+
+# library(ggplot2)
+
+# # ws <- readRDS("~/work/projects/metabolism/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
+# ws <- readRDS("~/work/projects/catchment_delineations/vjosa/res/vjosaWatershedSpring2018.rds")
+
+# xx <- c(1369, 22506, 13792, 8, 44100, 38600)
+# pl <- plot(ws)
+# for(i in x)
+# 	pl <- pl + geom_point(x = ws[i,'x'], y=ws[i,'y'], colour = 'red')
+# pl
+
+# distMatrix <- wsDistance(ws, xx)
+# x <- c(897, 43207, 6789)
+
+# test <- nearestNeighbors(ws, x, distMatrix)
+# test2 <- nearestNeighbors(ws, x, sites=xx)
 
 
 
