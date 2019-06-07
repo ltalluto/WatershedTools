@@ -29,8 +29,10 @@ transport <- function(ws, initial, lateral, times, method = c('euler', 'lsoda'),
 		stop('first time step must be 0')
 	if(method == 'euler' && sum(times %% dt) != 0)
 		stop('dt must divide evenly into all values in times')
-	if(!('adjacency_q' %in% names(ws)))
-		ws[["adjacency_q"]] <- Matrix::t(Matrix::t(ws[['adjacency']]) * ws$data$discharge)
+	if(!'discharge' %in% names(ws))
+		stop('discharge is required for the transport model')
+	if(!('adjacency_q' %in% ls(ws)))
+		ws$adjacency_q <- Matrix::t(Matrix::t(ws$adjacency) * ws$data$discharge)
 
 	parms <- list(qout = Matrix::colSums(ws[["adjacency_q"]]), 
 		qin = Matrix::rowSums(ws[["adjacency_q"]]), lateral = lateral, 

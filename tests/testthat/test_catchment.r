@@ -7,7 +7,7 @@ test_that("Test the catchment area workflow with rasters", {
 	testDEM <<- raster::raster(system.file("testdata/testDEM.grd", package="WatershedTools"))
 	gs <<- GrassSession(testDEM, layerName = "dem", gisBase = gisBase)
 	gs <<- fillDEM("dem", filledDEM = "filledDEM", probs = "problems", gs = gs)
-	gs <<- accumulate("filledDEM", accumulation = "accum", drainage = "drain", gs = gs)
+	gs <<- drainageAccumulation("filledDEM", accumulation = "accum", drainage = "drain", gs = gs)
 	accum <<- GSGetRaster("accum", gs)
 	coords <<- sp::coordinates(accum)[which.max(raster::values(accum)),, drop=FALSE]
 	expect_error(catchArea <- catchment(coords, drainage = "drain", gs = gs), regex = NA)
