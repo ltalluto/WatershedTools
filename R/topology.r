@@ -8,9 +8,17 @@
 #' @return A site by pixel distance matrix
 #' @export
 wsDistance <- function(ws, x, variable = 'length') {
-	downs <- parallel::mclapply(x, function(xx) accumulate(ws, xx, parallel=FALSE))
-	ups <- parallel::mclapply(x, function(xx) 
-		accumulate(ws, upstream=Inf, downstream = xx, parallel = FALSE, direction = 'up'))
+	downs <- parallel::mclapply(x, function(xx) {
+		res <- accumulate(ws, xx, parallel=FALSE)
+		if(!is.matrix(res)) res <- matrix(res, nrow=1)
+		res
+	})
+	ups <- parallel::mclapply(x, function(xx) {
+		res <- accumulate(ws, upstream=Inf, downstream = xx, parallel = FALSE, direction = 'up')
+		if(!is.matrix(res)) res <- matrix(res, nrow=1)
+		res
+	})
+
 	matTall <- do.call(rbind.data.frame, mapply(function(xx, ds, us) {
 		dsMat <- cbind(row=rep(xx, nrow(ds)), col = ds[,1], val = ds[,2])
 		usMat <- cbind(row=rep(xx, nrow(us)), col = us[,1], val = us[,2])
