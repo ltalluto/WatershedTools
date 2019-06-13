@@ -197,17 +197,19 @@ downstreamDist <- function(ws, x, variable = 'length', fun = sum) {
 #' @param x A vector of focal pixels (always required)
 #' @param distMatrix A site by pixel distance matrix, will be computed if not specified
 #' @param sites A list of sites for the distance matrix, required if distMatrix is missing
+#' @param selfAdjacency if TRUE, a site can be downstream of itself
 #' 
 #' @return A list with a downstream and an upstream element. Each element is a matrix, where
 #' the first column corresponds to the focal pixels in `x`, and the second column lists the
 #' nearest neighbors in `sites`.
 #' @export
-nearestNeighbors <- function(ws, x, distMatrix, sites) {
+nearestNeighbors <- function(ws, x, distMatrix, sites, selfAdjacency = FALSE) {
 	if(missing(distMatrix))
 		distMatrix <- wsDistance(ws, sites)
 
 	if(length(x) > 1) {
-		res <- lapply(x, function(xx) nearestNeighbors(ws, xx, distMatrix))
+		res <- lapply(x, function(xx) nearestNeighbors(ws, xx, distMatrix, 
+			selfAdjacency = selfAdjacency))
 		resds <- do.call(rbind, lapply(res, function(xx) xx$downstream))
 		resus <- do.call(rbind, lapply(res, function(xx) xx$upstream))
 		return(list(downstream = resds, upstream = resus))
@@ -216,8 +218,12 @@ nearestNeighbors <- function(ws, x, distMatrix, sites) {
 	x <- as.character(x)
 
 	# nearest downstream neighbor is easy, there is just one
-	ds <- dsNeighbors(x, distMatrix)
-	ds <- rownames(distMatrix[ds,x, drop=FALSE])[which.max(distMatrix[ds,x])]
+	if(selfAdjacency & x %in% rownames(distMatrix)) {
+		ds <- x
+	} else {
+		ds <- dsNeighbors(x, distMatrix)
+		ds <- rownames(distMatrix[ds,x, drop=FALSE])[which.max(distMatrix[ds,x])]
+	}
 	if(length(ds) > 0) {
 		ds <- c(as.integer(x), as.integer(ds))
 	} else
@@ -226,12 +232,16 @@ nearestNeighbors <- function(ws, x, distMatrix, sites) {
 	# for upstream, we look for upstream neighbors that have no downstream neighbors
 	# within the set of all upstream neighbors (in other words, their only downstream neighbors)
 	# are either the site x or sites downstream of x
-	us <- usNeighbors(x, distMatrix)
-	us_ds <- lapply(us, dsNeighbors, distMatrix = distMatrix[us,,drop = FALSE])
-	if(length(us_ds) == 0) {
-		us <- character(0)
-	} else
-		us <- us[sapply(us_ds, function(xx) all(is.na(xx)))]
+	if(selfAdjacency & x %in% rownames(distMatrix)) {
+		us <- x
+	} else {
+		us <- usNeighbors(x, distMatrix)
+		us_ds <- lapply(us, dsNeighbors, distMatrix = distMatrix[us,,drop = FALSE])
+		if(length(us_ds) == 0) {
+			us <- character(0)
+		} else
+			us <- us[sapply(us_ds, function(xx) all(is.na(xx)))]
+	}
 
 	if(length(us) > 0) {
 		us <- cbind(as.integer(x), as.integer(us))
