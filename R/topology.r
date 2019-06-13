@@ -217,7 +217,7 @@ nearestNeighbors <- function(ws, x, distMatrix, sites) {
 
 	# nearest downstream neighbor is easy, there is just one
 	ds <- dsNeighbors(x, distMatrix)
-	ds <- rownames(distMatrix)[which.max(distMatrix[ds,x])]
+	ds <- rownames(distMatrix[ds,x, drop=FALSE])[which.max(distMatrix[ds,x])]
 	if(length(ds) > 0) {
 		ds <- c(as.integer(x), as.integer(ds))
 	} else
@@ -227,11 +227,12 @@ nearestNeighbors <- function(ws, x, distMatrix, sites) {
 	# within the set of all upstream neighbors (in other words, their only downstream neighbors)
 	# are either the site x or sites downstream of x
 	us <- usNeighbors(x, distMatrix)
-	us_ds <- lapply(us, dsNeighbors, distMatrix = distMatrix[us,])
+	us_ds <- lapply(us, dsNeighbors, distMatrix = distMatrix[us,,drop = FALSE])
 	if(length(us_ds) == 0) {
 		us <- character(0)
 	} else
 		us <- us[sapply(us_ds, function(xx) all(is.na(xx)))]
+
 	if(length(us) > 0) {
 		us <- cbind(as.integer(x), as.integer(us))
 	} else 
