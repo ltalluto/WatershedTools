@@ -220,6 +220,8 @@ nearestNeighbors <- function(ws, x, distMatrix, sites, selfAdjacency = FALSE) {
 	# nearest downstream neighbor is easy, there is just one
 	if(selfAdjacency & x %in% rownames(distMatrix)) {
 		ds <- x
+	} else if(! x %in% colnames(distMatrix)) {
+		ds <- numeric(0)
 	} else {
 		ds <- dsNeighbors(x, distMatrix)
 		ds <- rownames(distMatrix[ds,x, drop=FALSE])[which.max(distMatrix[ds,x])]
@@ -234,6 +236,8 @@ nearestNeighbors <- function(ws, x, distMatrix, sites, selfAdjacency = FALSE) {
 	# are either the site x or sites downstream of x
 	if(selfAdjacency & x %in% rownames(distMatrix)) {
 		us <- x
+	} else if(! x %in% colnames(distMatrix)) {
+		us <- numeric(0)
 	} else {
 		us <- usNeighbors(x, distMatrix)
 		us_ds <- lapply(us, dsNeighbors, distMatrix = distMatrix[us,,drop = FALSE])

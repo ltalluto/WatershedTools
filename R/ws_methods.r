@@ -45,7 +45,7 @@ summary.Watershed <- function(x, ...) summary(x$data, ...)
 
 #' @rdname methods
 #' @export
-plot.Watershed <- function(x, variable, transform, size = 0.5, xlim, ylim)
+plot.Watershed <- function(x, variable, transform, size = 0.5, xlim, ylim, viridis_col = "inferno")
 {
 	if(!missing(transform))
 		x$data[[variable]] <- transform(x$data[[variable]])
@@ -55,9 +55,9 @@ plot.Watershed <- function(x, variable, transform, size = 0.5, xlim, ylim)
 		pl <- pl + ggplot2::aes_string(color=variable)
 		if(requireNamespace("viridisLite")) {
 			if(is.factor(x$data[[variable]])) {
-				pl <- pl + ggplot2::scale_colour_viridis_d(option = "inferno")
+				pl <- pl + ggplot2::scale_colour_viridis_d(option = viridis_col)
 			} else {
-				pl <- pl + ggplot2::scale_colour_viridis_c(option = "inferno")
+				pl <- pl + ggplot2::scale_colour_viridis_c(option = viridis_col)
 			}
 		}
 	}
