@@ -17,3 +17,11 @@ Most functions work the way you expect other R functions to work; communication 
 
     grass74 --config path
 
+
+## Installation Notes
+
+### macOS
+
+Developer tools are necessary to compile the package from source, which presently is the only way to install the package. I suggest you follow the [instructions on CRAN](https://cran.r-project.org/bin/macosx/) for installing tools necessary to compile packages from source. You will also need to install xcode from Apple.
+
+If you are getting compilation errors after installing xcode, be sure that you have installed the developer tools. This can be accomplished by opening a terminal window and running `xcode-select --install`. Sometimes it is necessary to do this step again if you have recently updated xcode or your macOS installaion.
