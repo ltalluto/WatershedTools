@@ -16,5 +16,5 @@ A watershed.
 }
 \description{
 This function returns a complete subset watershed object, including all tributaties upstream
-from a specified point. Pixel IDs will not be renamed, but reachIDs will.
+from a specified point. PixelIDs and reachIDs will be renumbered.
 }

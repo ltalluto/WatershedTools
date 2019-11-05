@@ -4,7 +4,7 @@
 \alias{nearestNeighbors}
 \title{Find the nearest neighbors for a focal pixel among a list of sites}
 \usage{
-nearestNeighbors(ws, x, distMatrix, sites)
+nearestNeighbors(ws, x, distMatrix, sites, selfAdjacency = FALSE)
 }
 \arguments{
 \item{ws}{A watershed, optional unless `distMatrix` is missing}
@@ -14,6 +14,8 @@ nearestNeighbors(ws, x, distMatrix, sites)
 \item{distMatrix}{A site by pixel distance matrix, will be computed if not specified}
 
 \item{sites}{A list of sites for the distance matrix, required if distMatrix is missing}
+
+\item{selfAdjacency}{if TRUE, a site can be downstream of itself}
 }
 \value{
 A list with a downstream and an upstream element. Each element is a matrix, where

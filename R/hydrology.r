@@ -201,10 +201,11 @@ discharge_scaling <- function(A, calib)
 				please install it and try again")
 		# stan doesn't play nice with data tables
 		calib <- as.data.frame(calib)
-		fit <- rstanarm::stan_glm(logQ ~ logA, data = calib,
-				prior_intercept = rstanarm::normal(logB_mu, logB_sd),
-				prior = rstanarm::normal(m_mu, m_sd))
-		Q <- exp(predict(fit, newdata = data.frame(logA = log(A))))
+		# make a dummy intercept to account for how Stan applies informative priors
+		calib$b <- 1
+		fit <- rstanarm::stan_glm(logQ ~ -1 + b + logA, data = calib,
+				prior = rstanarm::normal(c(logB_mu, m_mu), c(logB_sd, m_sd)))
+		Q <- exp(predict(fit, newdata = data.frame(b = 1, logA = log(A))))
 	}
 
 	# convert to m^3 per second
