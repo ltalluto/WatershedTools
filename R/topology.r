@@ -9,12 +9,13 @@
 #' @export
 wsDistance <- function(ws, x, variable = 'length') {
 	downs <- parallel::mclapply(x, function(xx) {
-		res <- accumulate(ws, xx, parallel=FALSE)
+		res <- accumulate(ws, xx, parallel=FALSE, variable = variable)
 		if(!is.matrix(res)) res <- matrix(res, nrow=1)
 		res
 	})
 	ups <- parallel::mclapply(x, function(xx) {
-		res <- accumulate(ws, upstream=Inf, downstream = xx, parallel = FALSE, direction = 'up')
+		res <- accumulate(ws, upstream=Inf, downstream = xx, parallel = FALSE, 
+			direction = 'up', variable = variable)
 		if(!is.matrix(res)) res <- matrix(res, nrow=1)
 		res
 	})
