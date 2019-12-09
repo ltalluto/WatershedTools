@@ -130,13 +130,15 @@ cropToCatchment <- function(x, streamRaster, streamVector, drainage, gs, file, t
 
 	if(!missing(streamVector)) {
 		if(any(grepl('SpatialLines', class(streamVector)))) {
-			rgrass7::writeVECT(streamVector, "cropToCatchment_streamVector", ignore.stderr=TRUE)
+			rgrass7::writeVECT(streamVector, "cropToCatchment_streamVector", 
+				v.in.ogr_flags = "overwrite", ignore.stderr=TRUE)
 			streamVector <- "cropToCatchment_streamVector"
 		}
 		catchVname <- "cropToCatchment_catchArea"
+		GSRastToPoly(crCatchment, catchVname, gs)
+		
 		oname <- "cropToCatchment_output"
-		GSRastToPoly(streamRaster, catchVname, gs)
-		rgrass7::execGRASS("v.overlay", flags=c("overwrite", "quiet"), ainput = streamVector, 
+		rgrass7::execGRASS("v.overlay", flags = c("overwrite", "quiet"), ainput = streamVector,
 			atype = "line", binput = catchVname, operator = "and", output = oname)
 		vout <- rgrass7::readVECT(oname)
 		if(trim)
