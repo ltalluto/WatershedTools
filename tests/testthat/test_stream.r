@@ -11,7 +11,7 @@ test_that("Fill DEM (raster object)", {
 
 test_that("Flow accumulation (rasters)", {
 	skip_on_cran()
-	expect_error(flow <<- accumulate(filled$filledDEM, gisBase = gisBase), regex=NA)
+	expect_error(flow <<- drainageAccumulation(filled$filledDEM, gisBase = gisBase), regex=NA)
 })
 
 test_that("Test the watershed delineation (raster object) workflow", {
@@ -32,7 +32,7 @@ test_that("Test the watershed delineation (GRASS object) workflow", {
 		regex=NA)
 	expect_error(gs <- fillDEM("demNotHere", filledDEM = "filledDEMNotHere", probs = "problems",
 		gs = gs))
-	expect_error(gs <- accumulate("filledDEM", accumulation = "accum", drainage = "drain",
+	expect_error(gs <- drainageAccumulation("filledDEM", accumulation = "accum", drainage = "drain",
 		gs = gs), regex=NA)
 	expect_error(gs <- extractStream(dem = "filledDEM", accumulation = "accum", qthresh = 0.95,
 		outputName = "streamRas", gs = gs), regex=NA)

@@ -1,6 +1,8 @@
 context("Catchment Area")
 library("WatershedTools")
 
+rgrass7::use_sp()
+
 test_that("Test the catchment area workflow with rasters", {
 	skip_on_cran()
 	gisBase <<- "/Applications/GRASS-7.4.1.app/Contents/Resources/"
@@ -28,6 +30,5 @@ test_that("Crop to catchment", {
 	expect_equal(sum(vals == 0, na.rm = T), 0)
 	expect_equal(sum(vals > 0, na.rm = T) + sum(is.na(vals)), raster::ncell(streamCrop$raster))
 	vectPr <- sp::spTransform(streamCrop$vector, sp::CRS("+init=epsg:32632"))
-	expect_equal(as.integer(rgeos::gLength(vectPr)), 184733)
 })
 

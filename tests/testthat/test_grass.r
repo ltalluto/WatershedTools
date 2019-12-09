@@ -1,6 +1,8 @@
 context("GRASS GIS Interface")
 library("WatershedTools")
 
+rgrass7::use_sp()
+
 test_that("Anonymous Grass session can be started", {
 	skip_on_cran()
 	gisBase <- "/Applications/GRASS-7.4.1.app/Contents/Resources/"

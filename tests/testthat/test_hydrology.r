@@ -6,6 +6,7 @@ initial <- lateral <- rep(0, nrow(ws$data))
 startloc <- 10546
 initial[startloc] <- 500
 
+
 test_that("transport works with lsoda & euler", {
 
 	## Note --> lsoda tests fail due to a bug in deSolve
