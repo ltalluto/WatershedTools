@@ -65,6 +65,7 @@ plot.Watershed <- function(x, variable, transform, size = 0.5, xlim, ylim, virid
 		pl <- pl + ggplot2::xlim(xlim)
 	if(!missing(ylim))
 		pl <- pl + ggplot2::ylim(ylim)
+	pl <- pl + ggplot2::coord_fixed()
 	pl
 }
 
