@@ -224,6 +224,7 @@ discharge_scaling <- function(A, calib)
 #' @param width a vector of stream widths
 #' @param widthID a vector of IDs for width measurements to match to flowID
 #' @param na.rm should NAs be removed before computation?
+#' @import data.table
 #' @keywords internal
 #' 
 #' @return A data.table giving discharge by ID
@@ -235,7 +236,7 @@ q_from_flow <- function(depth, velocity, flowID = rep(1, length(depth)), width,
 	if(length(width) != length(widthID))
 		stop("width and widthID must have the same length")
 
-	require(data.table)
+	# require(data.table)
 	widthByID <- data.table(id = widthID, width = width)
 	widthByID <- widthByID[, .(width = mean(width, na.rm = na.rm)), keyby=id]
 
