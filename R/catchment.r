@@ -46,7 +46,7 @@ catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
 	catchName <- "catchment"
 	for(i in 1:nrow(x))
 	{
-		rgrass7::execGRASS("r.water.outlet", flags=c("overwrite"), input = drainage, 
+		rgrass7::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input = drainage, 
 			output = catchName, coordinates = x[i,])
 		if(areas) {
 			result[i] <- catchmentArea(catchName, gs)

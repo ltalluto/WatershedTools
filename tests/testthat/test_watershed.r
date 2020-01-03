@@ -1,13 +1,7 @@
 context("Watershed Object")
 library("WatershedTools")
 
-getGISBase <- function(appPath = "/Applications", suffix = "Contents/Resources") {
-	grassBase <- list.files(appPath, pattern='GRASS')
-	gVersion <- as.numeric(sub(".*(7\\.[0-9\\.]+)\\.app", "\\1", grassBase))
-	if(length(grassBase) > 1)
-		grassBase <- grassBase[which.max(gVersion)]
-	file.path(appPath, grassBase, suffix)
-}
+
 gisBase <- getGISBase()
 
 test_that("Creation of a basic Watershed proceeds without error", {

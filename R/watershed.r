@@ -298,9 +298,10 @@ reachByReachAdj <- function(ws) {
 #' @keywords internal
 reachAdj <- function(ws, rch) {
 	ids <- which(ws$data$reachID == rch)
-	reachAdj <- ws$adjacency[ids, ids, drop = FALSE]
+	reachAdj <- ws$adjacency[ids,ids, drop = FALSE]
 	mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
-	upRch <- which(ws$adjacency[mostUpstream,] == 1)
+	adjMatUp <- as.matrix(ws$adjacency[,mostUpstream])
+	upRch <- which(adjMatUp == 1)
 	if(length(upRch) > 0) {
 		upRch <- ws$data$reachID[upRch]
 		return(cbind(rch, upRch))

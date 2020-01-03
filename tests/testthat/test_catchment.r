@@ -1,11 +1,11 @@
 context("Catchment Area")
 library("WatershedTools")
 
-rgrass7::use_sp()
+tryCatch(rgrass7::use_sp(), error = function (e) NULL)
 
 test_that("Test the catchment area workflow with rasters", {
 	skip_on_cran()
-	gisBase <<- "/Applications/GRASS-7.4.1.app/Contents/Resources/"
+	gisBase <<- getGISBase()
 	testDEM <<- raster::raster(system.file("testdata/testDEM.grd", package="WatershedTools"))
 	gs <<- GrassSession(testDEM, layerName = "dem", gisBase = gisBase)
 	gs <<- fillDEM("dem", filledDEM = "filledDEM", probs = "problems", gs = gs)
@@ -23,8 +23,9 @@ test_that("Crop to catchment", {
 	stream <<- extractStream(dem = "filledDEM", accumulation = accum, qthresh = 0.95, 
 		gs = gs, type='both')
 	# sitesSnap <- snapToStream(sites, thurStream$raster, buff= 400)
-	expect_error(streamCrop <- cropToCatchment(coords, streamRaster = stream$raster, 
-		streamVector = stream$vector, drainage = "drain", gs = gs), regex=NA)
+	# this line produces a text conversion warning
+	expect_warning(streamCrop <- cropToCatchment(coords, streamRaster = stream$raster, 
+		streamVector = stream$vector, drainage = "drain", gs = gs))
 	vals <- raster::values(streamCrop$raster)
 	expect_equal(sum(vals > 0, na.rm = T), 5777)
 	expect_equal(sum(vals == 0, na.rm = T), 0)
