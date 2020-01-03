@@ -45,6 +45,7 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	wsobj$data$reachID <- renumberReaches(wsobj$data$reachID)
 	wsobj$reach_adjacency <- reachByReachAdj(wsobj)
 	wsobj$reach_connectivity <- reachByReachConn(wsobj, self = FALSE)
+	attr(wsobj, "version") <- packageVersion("WatershedTools")
 	return(wsobj)
 }
 
