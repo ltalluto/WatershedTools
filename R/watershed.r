@@ -38,6 +38,7 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	adjacency <- WSConnectivity(drainage, allRasters$id)
 	allSPDF <- sp::merge(allSPDF, adjacency$drainage, by = 'id', all.x = TRUE)
 	allSPDF$length <- WSComputeLength(allSPDF$drainage, raster::res(drainage))
+	allSPDF$vReachNumber <- allSPDF$reachID
 	allSPDF$reachID <- renumberReaches(allSPDF$reachID)
 
 	wsobj <- list(data = allSPDF, adjacency = adjacency$adjacency)
