@@ -1,6 +1,6 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 1.0.2
+Version: 1.0.2.9002
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -19,7 +19,8 @@ Imports:
     deSolve,
     Rcpp,
     ggplot2,
-    reshape2
+    reshape2,
+    data.table
 Suggests: 
     testthat,
     maptools,
