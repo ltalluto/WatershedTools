@@ -300,7 +300,7 @@ reachAdj <- function(ws, rch) {
 	ids <- which(ws$data$reachID == rch)
 	reachAdj <- ws$adjacency[ids,ids, drop = FALSE]
 	mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
-	adjMatUp <- as.matrix(ws$adjacency[,mostUpstream])
+	adjMatUp <- as.matrix(ws$adjacency[mostUpstream,])
 	upRch <- which(adjMatUp == 1)
 	if(length(upRch) > 0) {
 		upRch <- ws$data$reachID[upRch]

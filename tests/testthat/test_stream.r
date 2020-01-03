@@ -1,7 +1,7 @@
 context("Watershed Deliniation Functions")
 library("WatershedTools")
 
-gisBase <- "/Applications/GRASS-7.4.1.app/Contents/Resources/"
+gisBase <- getGISBase()
 
 test_that("Fill DEM (raster object)", {
 	skip_on_cran()
@@ -25,15 +25,14 @@ test_that("Test the watershed delineation (raster object) workflow", {
 # test the workflow using GRASS layers instead of rasters
 test_that("Test the watershed delineation (GRASS object) workflow", {
 	skip_on_cran()
-	gisBase <- "/Applications/GRASS-7.4.1.app/Contents/Resources/"
 	testDEM <- raster::raster(system.file("testdata/testDEM.grd", package="WatershedTools"))
 	expect_error(gs <- GrassSession(testDEM, layerName = "dem", gisBase = gisBase), regex=NA)
 	expect_error(gs <- fillDEM("dem", filledDEM = "filledDEM", probs = "problems", gs = gs),
 		regex=NA)
 	expect_error(gs <- fillDEM("demNotHere", filledDEM = "filledDEMNotHere", probs = "problems",
 		gs = gs))
-	expect_error(gs <- drainageAccumulation("filledDEM", accumulation = "accum", drainage = "drain",
-		gs = gs), regex=NA)
+	expect_error(gs <- drainageAccumulation("filledDEM", accumulation = "accum", 
+		drainage = "drain", gs = gs), regex=NA)
 	expect_error(gs <- extractStream(dem = "filledDEM", accumulation = "accum", qthresh = 0.95,
 		outputName = "streamRas", gs = gs), regex=NA)
 	expect_error(streamRas <- GSGetRaster("streamRas", gs), regex=NA)

@@ -2,7 +2,7 @@ context("Subcatchment")
 library("WatershedTools")
 
 ws <- readRDS(system.file("testdata/testWS.rds", package="WatershedTools"))
-x <- confluences(ws)[17,'id']
+x <- confluences(ws)[1,'id']
 
 test_that("Subcatchment extraction works as expected", {
 	expect_error(subWs <- subcatchment(ws, x), regex=NA)

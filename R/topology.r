@@ -42,7 +42,10 @@ wsDistance <- function(ws, x, variable = 'length') {
 #' @return A vector of pixel ids
 #' @export
 connect <- function(ws, upstream, downstream = Inf) {
-	accumulate(ws, upstream, downstream)[,1]
+	direction <- "down"
+	if(is.infinite(upstream))
+		direction <- "up"
+	accumulate(ws, upstream, downstream, direction)[,1]
 }
 
 
