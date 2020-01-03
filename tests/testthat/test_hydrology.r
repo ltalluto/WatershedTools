@@ -3,7 +3,7 @@ library("WatershedTools")
 
 ws <- readRDS(system.file("testdata/testWS.rds", package="WatershedTools"))
 initial <- lateral <- rep(0, nrow(ws$data))
-startloc <- 10546
+startloc <- headwaters(ws)[1, 'id']
 initial[startloc] <- 500
 
 

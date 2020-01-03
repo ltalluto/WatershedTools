@@ -4,6 +4,7 @@
 
 .onLoad <- function(libname, pkgname) {
 	require(deSolve, quietly=TRUE)
+	Sys.setenv("GRASS_VERBOSE"=0)
 }
 
 #' @keywords internal

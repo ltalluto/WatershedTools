@@ -4,6 +4,7 @@ library(sp)
 gisBase <- getGISBase()
 
 testDEM <- raster(system.file("testdata/testDEM.grd", package="WatershedTools"))
+testDEM <- projectRaster(testDEM, crs=CRS("+init=epsg:3035"))
 gs <- GrassSession(testDEM, layerName = "dem", gisBase = gisBase)
 gs <- fillDEM("dem", filledDEM = "filledDEM", probs = "problems", gs = gs)
 gs <- drainageAccumulation("filledDEM", accumulation = "accum", drainage = "drain",

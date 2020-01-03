@@ -31,12 +31,18 @@ transport <- function(ws, initial, lateral, times, method = c('euler', 'lsoda'),
 		stop('dt must divide evenly into all values in times')
 	if(!'discharge' %in% names(ws))
 		stop('discharge is required for the transport model')
+	if(!'csArea' %in% names(ws)) {
+		if(!('width' %in% names(ws)) & !('depth' %in% names(ws))) {
+			stop("depth and width, or csArea, are required attributes")
+		} else
+			ws$data$csArea <- ws$data$width * ws$data$depth
+	}
 	if(!('adjacency_q' %in% ls(ws)))
 		ws$adjacency_q <- Matrix::t(Matrix::t(ws$adjacency) * ws$data$discharge)
 
 	parms <- list(qout = Matrix::colSums(ws[["adjacency_q"]]), 
 		qin = Matrix::rowSums(ws[["adjacency_q"]]), lateral = lateral, 
-		csArea = ws[['data']][['csArea']], dx = ws[['data']][["dx"]])
+		csArea = ws[['data']][['csArea']], dx = ws[['data']][["length"]])
 	# add discharge for the outlet back in (outlet drains to nowhere)
 	parms$qout[which(parms$qout == 0)] <- ws[['data']]$discharge[which(parms$qout == 0)]
 	
