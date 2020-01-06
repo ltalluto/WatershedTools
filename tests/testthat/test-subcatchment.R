@@ -12,3 +12,4 @@ test_that("Subcatchment extraction works as expected", {
 	expect_true(all(subWs[,'reachID'] %in% 1:max(subWs[,'reachID'])))
 	expect_identical(ls(ws), ls(subWs))
 })
+

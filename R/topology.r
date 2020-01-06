@@ -45,7 +45,11 @@ connect <- function(ws, upstream, downstream = Inf) {
 	direction <- "down"
 	if(is.infinite(upstream))
 		direction <- "up"
-	accumulate(ws, upstream, downstream, direction)[,1]
+	res <- accumulate(ws, upstream, downstream, direction)[,1]
+	if(!is.matrix(res)) {
+		res <- matrix(res, ncol=2)
+	}
+	res
 }
 
 
@@ -68,17 +72,17 @@ accumulate <- function(ws, upstream, downstream = Inf, direction = c("down", "up
 	if(parallel && !requireNamespace("parallel"))
 		parallel <- FALSE
 	dsPixes <- downstreamPixelIds(ws)
-	if(is.infinite(downstream))
+	if(length(downstream) == 1 && is.infinite(downstream))
 		downstream <- outlets(ws)$id
-	if(is.infinite(upstream)) {
-		rid <- ws[downstream, 'reachID']
-		tops <- headwaters(ws)[,'id']
-		upReaches <- Matrix::which(ws$reach_connectivity[rid,] == 1)
-		if(rid %in% ws[tops, 'reachID'])
-			upReaches <- c(upReaches, rid)
-		upstream <- tops[ws[tops, "reachID"] %in% upReaches]
-	}
-	if(length(downstream == 1)) {
+	if(length(downstream) == 1) {
+		if(length(upstream) == 1 && is.infinite(upstream)) {
+			rid <- ws[downstream, 'reachID']
+			tops <- headwaters(ws)[,'id']
+			upReaches <- Matrix::which(ws$reach_connectivity[rid,] == 1)
+			if(rid %in% ws[tops, 'reachID'])
+				upReaches <- c(upReaches, rid)
+			upstream <- tops[ws[tops, "reachID"] %in% upReaches]
+		}
 		if(length(upstream) == 1) {
 			accum <- do.call(cbind, connectCPP(dsPixes, upstream, downstream, ws[, variable]))
 			if(direction == 'up') 
@@ -95,10 +99,11 @@ accumulate <- function(ws, upstream, downstream = Inf, direction = c("down", "up
 		}
 	} else {
 		accum <- do.call(rbind, 
-				lapply(downstream, function(x) accumulate(ws, upstream, x, variable, parallel)))
+				lapply(downstream, function(x) accumulate(ws, upstream, x, direction, 
+					variable, parallel)))
 	}
 	## remove redundancies; it is quite common to traverse the same pixel multiple times
-	accum <- accum[!duplicated(accum[,1]),]
+	accum <- accum[!duplicated(accum[,1]),, drop=FALSE]
 	return(accum)
 }
 

@@ -105,6 +105,8 @@ dCdt_transport <- function(t, y, parms, rxn = NULL, rxnParams = list()) {
 	if(!is.null(rxn)) {
 		rxnList <- c(list(t = t, y = y), (rxnParams))
 		reaction <- do.call(rxn, rxnParams)
+	} else {
+		reaction <- 0
 	}
 
 	return(list(advection + reaction))
