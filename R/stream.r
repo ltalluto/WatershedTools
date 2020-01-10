@@ -246,3 +246,92 @@ CropPtBuff <- function(pt, ras, buff)
 	newextent <- raster::extent(xc[1] - buff, xc[1] + buff, xc[2] - buff, xc[2] + buff)
 	raster::crop(ras, newextent)
 }
+
+
+
+
+#' Compute stream order
+#' @param
+#' @param drainage Raster or character; drainage direction raster.
+#' @param elevation Raster or character; a digital elevation model.
+#' @param gs An optional [GrassSession()]; if missing a new one will be created
+#' @param outputName The name of the output raster to create; see 'details'
+#' @param type Type of stream order to compute; see help for r.stream.order
+#' @param file Optional file name if a raster is to be returned
+#' @param ... Additional parameters to be passed to [GrassSession()]
+#' @details This is a wrapper for r.stream.order in GRASS GIS.
+#' 
+#' Input rasters `stream`, `drainage` and `elevation` may be either [raster::rasterLayer()]
+#' objects or a `character`. In the former case, these layers will be added to the grass
+#' session. In the latter, it is required that `gs` be specified and that a layer with that
+#' name exists in the grass session.
+#' 
+#' If outputName is missing, then the function will return the stream order raster. Otherwise,
+#' this outputName will be used to save the raster in the existing GrassSession, which will
+#' be returned to the user
+#' 
+#' @return A rasterLayer or a grassSession, depending on the value of `outputName`
+#' @export
+stream_order <- function(stream, drainage, elevation, gs, outputName, 
+			type = c('strahler', 'horton', 'shreve', 'hack', 'topo'), file, ...) {
+
+	type <- match.arg(type)
+
+	if(missing(gs)) {
+		if(! "RasterLayer" %in% class(stream) | ! "RasterLayer" %in% class(drainage) |
+					! "RasterLayer" %in% class(elevation))
+			stop("If gs is missing, stream, drainage, and elevation must be rasters")
+		gs <- GrassSession(dem, layerName = "stream", ...)
+		stream <- "stream"
+		gs <- GSAddRaster(drainage, layerName = "drainage", gs)
+		drainage <- "drainage"
+		gs <- GSAddRaster(elevation, layerName = "elevation", gs)
+		elevation <- "elevation"
+	} else {
+		if(!is.character(stream)) {
+			gs <- GSAddRaster(stream, layerName = "stream", gs)
+			stream <- "stream"
+		}
+
+		if(!is.character(drainage)) {
+			gs <- GSAddRaster(drainage, layerName = "drainage", gs)
+			stream <- "drainage"
+		}
+
+		if(!is.character(elevation)) {
+			gs <- GSAddRaster(elevation, layerName = "elevation", gs)
+			stream <- "elevation"
+		}
+	}
+
+	returnRaster <- missing(outputName)
+	if(missing(outputName))
+		outputName <- "streamOrder"
+
+	strahlerName <- hortonName <- shreveName <- hackName <- topoName <- NULL
+	if(type == 'strahler') {
+		strahlerName <- outputName
+	} else if (type == 'horton') {
+		hortonName <- outputName
+	} else if (type == 'shreve') {
+		shreveName <- outputName
+	} else if (type == 'hack') {
+		hackName <- outputName
+	} else if (type == 'topo') {
+		topoName <- outputName
+	}
+
+	rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
+		direction = drainage, elevation=elevation, strahler=strahlerName, horton=hortonName,
+		shreve=shreveName, hack=hackName, topo=topoName)
+	gs <- GSAppendRasterName(outputName, gs = gs)
+
+	if(returnRaster) {
+		res <- GSGetRaster(outputName, gs, file = file)
+	} else {
+		res <- gs
+	}
+	return(res)
+}
+
+
