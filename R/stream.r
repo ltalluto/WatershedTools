@@ -250,16 +250,73 @@ CropPtBuff <- function(pt, ras, buff)
 
 
 
+#' Compute strahler order for pixel x
+#' @param ws A watershed
+#' @param x A pixel id
+#' @param streamOrder Vector of streamOrders already computed (should be NA if not done yet)
+#' @return A matrix, giving pixel IDs in the first column and computed stream order in the second
+#' @keywords internal
+doStrahler <- function(ws, x, streamOrder) {
+	upIDs <- which(ws$adjacency[x,] == 1)
+	if(length(upIDs) < 1) {
+		val <- 1
+	} else {
+		upOrders <- streamOrder[upIDs]
+		if(any(is.na(upOrders))) {
+			val <- NA
+		} else if(sum(upOrders == max(upOrders)) == 1) {
+			val <- max(upOrders)
+		}  else
+			val <- max(upOrders) + 1
+	}
+
+	pixes <- ws$data$id[ws$data$reachID == ws$data$reachID[x]]
+	cbind(pixes, rep(val, length(pixes)))
+}
+
+#' Compute strahler stream order
+#' 
+#' @param ws A watershed
+#' @param parallel If TRUE, will compute in parallel to speed things up. Defaults to TRUE
+#' if parallel package is installed
+#' @details Computes Strahler stream order
+#' @return a vector, with one element per pixel in the watershed.
+strahler <- function(ws, parallel = TRUE) {
+	if(parallel && requireNamespace("parallel")) {
+		FUN <- mclapply
+	} else
+		FUN <- lapply
+	streamOrder <- rep(NA, length=nrow(ws$data))
+	pix <- c(headwaters(ws)$id, confluences(ws)$id)
+	while(any(is.na(streamOrder))) {
+		ord <- FUN(pix, function(x) doStrahler(ws, x, streamOrder))
+		ord <- do.call(rbind, ord)
+		streamOrder[ord[,1]] <- ord[,2]
+		prev <- pix
+		pix <- pix[is.na(streamOrder[pix])]
+		if(length(pix) == length(prev))
+			stop("No progress being made, check topology")
+	}
+	streamOrder
+}
+
+
 #' Compute stream order
-#' @param
+#' @param stream Raster or character; stream raster.
 #' @param drainage Raster or character; drainage direction raster.
 #' @param elevation Raster or character; a digital elevation model.
 #' @param gs An optional [GrassSession()]; if missing a new one will be created
 #' @param outputName The name of the output raster to create; see 'details'
 #' @param type Type of stream order to compute; see help for r.stream.order
 #' @param file Optional file name if a raster is to be returned
+#' @param install Boolean, should we install the r.stream.order extension? If you get an error
+#' that the command was not found, try setting this to TRUE the first time you run `stream_order`
+#' @param force Force this broken function to try anyway
 #' @param ... Additional parameters to be passed to [GrassSession()]
-#' @details This is a wrapper for r.stream.order in GRASS GIS.
+#' @details Deprecated function, use strahler instead, this one doesn't work. If you really
+#' 		want this one, use force = TRUE
+#' 
+#' This is a wrapper for r.stream.order in GRASS GIS.
 #' 
 #' Input rasters `stream`, `drainage` and `elevation` may be either [raster::rasterLayer()]
 #' objects or a `character`. In the former case, these layers will be added to the grass
@@ -273,7 +330,11 @@ CropPtBuff <- function(pt, ras, buff)
 #' @return A rasterLayer or a grassSession, depending on the value of `outputName`
 #' @export
 stream_order <- function(stream, drainage, elevation, gs, outputName, 
-			type = c('strahler', 'horton', 'shreve', 'hack', 'topo'), file, ...) {
+			type = c('strahler', 'horton', 'shreve', 'hack', 'topo'), file, 
+			install = FALSE, force = FALSE, ...) {
+
+	if(!force)
+		stop("This function is deprecated, it doesn't work; use strahler() instead")
 
 	type <- match.arg(type)
 
@@ -281,10 +342,13 @@ stream_order <- function(stream, drainage, elevation, gs, outputName,
 		if(! "RasterLayer" %in% class(stream) | ! "RasterLayer" %in% class(drainage) |
 					! "RasterLayer" %in% class(elevation))
 			stop("If gs is missing, stream, drainage, and elevation must be rasters")
-		gs <- GrassSession(dem, layerName = "stream", ...)
-		stream <- "stream"
+		gs <- GrassSession(stream, layerName = "stream", ...)
+		rgrass7::execGRASS("r.mapcalc", expression = "stream_int = round(stream)")
+		stream <- "stream_int"
+
 		gs <- GSAddRaster(drainage, layerName = "drainage", gs)
-		drainage <- "drainage"
+		rgrass7::execGRASS("r.mapcalc", expression = "drainage_int = round(drainage)")
+		drainage <- "drainage_int"
 		gs <- GSAddRaster(elevation, layerName = "elevation", gs)
 		elevation <- "elevation"
 	} else {
@@ -308,22 +372,25 @@ stream_order <- function(stream, drainage, elevation, gs, outputName,
 	if(missing(outputName))
 		outputName <- "streamOrder"
 
-	strahlerName <- hortonName <- shreveName <- hackName <- topoName <- NULL
+	if(install)
+		rgrass7::execGRASS("g.extension", extension="r.stream.order")
 	if(type == 'strahler') {
-		strahlerName <- outputName
+		rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
+			direction = drainage, elevation=elevation, strahler=outputName)
 	} else if (type == 'horton') {
-		hortonName <- outputName
+		rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
+			direction = drainage, elevation=elevation, horton=outputName)
 	} else if (type == 'shreve') {
-		shreveName <- outputName
+		rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
+			direction = drainage, elevation=elevation, shreve=outputName)
 	} else if (type == 'hack') {
-		hackName <- outputName
+		rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
+			direction = drainage, elevation=elevation, hack=outputName)
 	} else if (type == 'topo') {
-		topoName <- outputName
+		rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
+			direction = drainage, elevation=elevation, topo=outputName)
 	}
 
-	rgrass7::execGRASS("r.stream.order", flags=c("overwrite", "quiet"), stream_rast = stream, 
-		direction = drainage, elevation=elevation, strahler=strahlerName, horton=hortonName,
-		shreve=shreveName, hack=hackName, topo=topoName)
 	gs <- GSAppendRasterName(outputName, gs = gs)
 
 	if(returnRaster) {
