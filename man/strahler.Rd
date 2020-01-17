@@ -4,7 +4,7 @@
 \alias{strahler}
 \title{Compute strahler stream order}
 \usage{
-strahler(ws, parallel = requireNamespace(parallel))
+strahler(ws, parallel = TRUE)
 }
 \arguments{
 \item{ws}{A watershed}

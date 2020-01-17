@@ -283,7 +283,7 @@ doStrahler <- function(ws, x, streamOrder) {
 #' @return a vector, with one element per pixel in the watershed.
 strahler <- function(ws, parallel = TRUE) {
 	if(parallel && requireNamespace("parallel")) {
-		FUN <- mclapply
+		FUN <- parallel::mclapply
 	} else
 		FUN <- lapply
 	streamOrder <- rep(NA, length=nrow(ws$data))
