@@ -4,7 +4,7 @@
 \alias{nearestDownstreamNeighbor}
 \title{Construct a matrix identifying the nearest downstream neighbor from a list of sites}
 \usage{
-nearestDownstreamNeighbor(ws, x, names = x)
+nearestDownstreamNeighbor(ws, x, siteNames)
 }
 \arguments{
 \item{ws}{A watershed}
@@ -16,6 +16,7 @@ nearestDownstreamNeighbor(ws, x, names = x)
 \value{
 A 2-column matrix; the first column gives the ID of a pixel, the second its nearest
 downstream neighbor. Pixels in `x` that have no nearest neighbor are excluded.
+If 'names' is specified, the output matrix will give site names instead of pixelIDs
 }
 \description{
 Construct a matrix identifying the nearest downstream neighbor from a list of sites

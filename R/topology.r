@@ -135,8 +135,9 @@ siteByReach <- function(ws, points, names, self = TRUE) {
 #' @param names Optional vector of site names
 #' @return A 2-column matrix; the first column gives the ID of a pixel, the second its nearest
 #' downstream neighbor. Pixels in `x` that have no nearest neighbor are excluded.
+#' If 'names' is specified, the output matrix will give site names instead of pixelIDs
 #' @export
-nearestDownstreamNeighbor <- function(ws, x, names = x) {
+nearestDownstreamNeighbor <- function(ws, x, siteNames) {
 	dmat <- downstreamDist(ws, x)
 	res <- do.call(c, apply(dmat, 1, function(x) {
 		if(all(x == 0)) {
@@ -146,9 +147,10 @@ nearestDownstreamNeighbor <- function(ws, x, names = x) {
 			names(x)[which.min(x)]
 		}
 	}))
-	mat <- cbind(from=as.integer(names(res)), to=as.integer(res))
-	if(!missing(names)) {
-		mat <- cbind(from=names[match(mat[,1], x)], to=names[match(mat[,2], x)])
+	if(!missing(siteNames)) {
+		mat <- cbind(from=siteNames[match(mat[,1], x)], to=siteNames[match(mat[,2], x)])
+	} else {
+		mat <- cbind(from=as.integer(names(res)), to=as.integer(res))
 	}
 	mat
 }
