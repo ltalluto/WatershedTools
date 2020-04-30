@@ -45,11 +45,7 @@ connect <- function(ws, upstream, downstream = Inf) {
 	direction <- "down"
 	if(is.infinite(upstream))
 		direction <- "up"
-	res <- accumulate(ws, upstream, downstream, direction)[,1]
-	if(!is.matrix(res)) {
-		res <- matrix(res, ncol=2)
-	}
-	res
+	accumulate(ws, upstream, downstream, direction)[,1]
 }
 
 
