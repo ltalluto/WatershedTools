@@ -147,10 +147,9 @@ nearestDownstreamNeighbor <- function(ws, x, siteNames) {
 			names(x)[which.min(x)]
 		}
 	}))
+	mat <- cbind(from=as.integer(names(res)), to=as.integer(res))
 	if(!missing(siteNames)) {
 		mat <- cbind(from=siteNames[match(mat[,1], x)], to=siteNames[match(mat[,2], x)])
-	} else {
-		mat <- cbind(from=as.integer(names(res)), to=as.integer(res))
 	}
 	mat
 }
