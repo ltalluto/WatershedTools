@@ -1,3 +1,65 @@
+#' Compute the slope along the river channel
+#' 
+#' This computes the change in elevation from one watershed unit to the next. Computation by
+#' pixel is only recommended if the elevation model used to create the watershed is very
+#' accurate; otherwise unrealistic slopes can occur. Reach-based computation uses a much
+#' larger range of pixels to compute the slope, and so is less prone to DEM errors.
+#' 
+#' @param ws A watershed
+#' @param by Should the slope be computed for each reach (recommended) or from one pixel to the 
+#' next
+#' 
+#' @return A vector of slopes, one per pixel
+#' @examples
+#' \donttest{
+#' ws_slope(ws)
+#' ws_slope(ws, by = "pixel")
+#' }
+#' @export
+ws_slope = function(ws, by = c("reach", "pixel")) {
+	by = match.arg(by)
+	if(by == "pixel") {
+		adj = methods::as(ws$adjacency, "dgTMatrix")
+		adj = cbind(adj@i + 1, adj@j + 1, adj@x) ## Matrix is 0-indexed
+
+		## this function assumes the adjacenty matrix is unweighted
+		adj[,3] = ws$data$length[adj[,2]]
+		delev = ws$data$elevation[adj[,1]] - ws$data$elevation[adj[,2]]
+
+		slope = numeric(nrow(ws$data)) * NA
+		slope[adj[,1]] = delev/adj[,3]
+		slope[adj[,2]] = delev/adj[,3]
+		slope = abs(slope)
+	} else {
+		delev = tapply(ws$data$elevation, ws$data$reachID, function(x) max(x) - min(x))
+		length = tapply(ws$data$length, ws$data$reachID, sum)
+		slope = delev / length
+		slope = slope[match(ws$data$reachID, names(slope))]		
+	}
+	return(slope)
+}
+
+
+#' Compute an adjacency buffer for an adjacency matrix
+#' 
+#' For a weighted sparse adjacency matrix, this function returns another weighted matrix.
+#' A nonzero element in i,j indicates that j is the node 
+#' 
+#' @param adj
+
+#' Nearest neighbors of pixels
+#' @keywords internal
+ds = function(pix, ws) {
+	which(ws$adjacency[,pix] == 1)
+}
+
+#' Nearest neighbors of pixels
+#' @keywords internal
+us = function(pix, ws) {
+	which(ws$adjacency[pix,] == 1)
+}
+
+
 #' Produces a site by pixel distance matrix
 #'
 #' Note that pixels in the watershed that are not connected to any of the sites will be excluded

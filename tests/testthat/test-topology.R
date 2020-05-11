@@ -73,6 +73,22 @@ test_that("Downstream Neighbor", {
 })
 
 
+test_that("Slope", {
+	skip_on_cran()
+	ws2 = ws
+	pix = 358
+	ws2$data$elevation[pix] = 795
+	delev = 5
+	dx = 10
+	uspix = WatershedTools:::us(pix, ws2)
+	dspix = WatershedTools:::ds(pix, ws2)
+	ws2$data$elevation[uspix] = ws2$data$elevation[pix] + delev
+	ws2$data$elevation[dspix] = ws2$data$elevation[pix] - delev
+	ws2$data$length[c(uspix, pix, dspix)] = dx
+	expect_error(ws2$data$wsslope <- ws_slope(ws2), regex=NA)
+	expect_error(ws2$data$wsslope <- ws_slope(ws2, by='pixel'), regex=NA)
+	expect_equal(ws2[pix, 'wsslope'], delev/dx)
+})
 
 # test_that("Nearest Neighbors", {
 # 	expect_error(nnsnb <- nearestNeighbors(ws, c(outletID, ussite, hwID), 
