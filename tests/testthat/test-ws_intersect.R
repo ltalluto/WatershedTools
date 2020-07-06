@@ -18,4 +18,17 @@ test_that("Buffering & Intersection works", {
 	s_merge = merge(s1, s2, by = c("Var1", "Var2"))
 	expect_lt(mean(abs(s_merge$value.x - s_merge$value.y) / s_merge$value.x), 0.01)
 	
+	# test the summarizing function
+	expect_warning(isect_sf_tab <- WatershedTools:::.riv_buff_intersect(riv, litho, 100, gs = NA, summarise = TRUE, 
+				by = c('xx', 'a_cat_'), subunit = 'a_cat_'), regex="attribute")
+	expect_true(all(isect_sf_tab[, .(sum=sum(proportion)), a_cat_]$sum == 1))
+	
+})
+
+test_that("ws_intersect", {
+	expect_warning(sumtab <- ws_intersect(riv, list(litho = litho, landuse = litho), 
+			area_id = list('xx', 'xx'), reach_id = 'a_cat_', use_sf=TRUE), regex='attribute')
+	expect_true(all(c('xx', 'a_cat_', 'area', 'proportion', 'layer', 'method') %in% colnames(sumtab)))
+	expect_true(all(sumtab[, .(sum=sum(proportion)), .(a_cat_, layer)]$sum == 1))
+	
 })

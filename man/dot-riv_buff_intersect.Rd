@@ -4,7 +4,7 @@
 \alias{.riv_buff_intersect}
 \title{Helper function for creating river buffers}
 \usage{
-.riv_buff_intersect(x, y, rip_buffer, gs)
+.riv_buff_intersect(x, y, rip_buffer, gs, summarise = FALSE, ...)
 }
 \arguments{
 \item{x}{A river network; this should be a vector gis feature, either from the `sf` or `sp` packages}
@@ -14,9 +14,15 @@
 \item{rip_buffer}{The width of the riparian buffer}
 
 \item{gs}{A grass session, if missing or NA, then sf functions will be used}
+
+\item{...}{Additional arguments to pass to [.sf_summary()]}
+
+\item{summarize}{Boolean, if TRUE, controls whether a layer or a summary table is returned}
 }
 \value{
-If gs is null or grass_output is "sf", then a buffer polygon layer of class "sf", if grass_output is "string",
+If summarize is TRUE, a summary table based on the `...` arguments passed on to [.sf_summary()]. 
+
+Otherwise, if gs is null or grass_output is "sf", then a buffer polygon layer of class "sf", if grass_output is "string",
 then the name of the vector layer in the grass session
 }
 \description{

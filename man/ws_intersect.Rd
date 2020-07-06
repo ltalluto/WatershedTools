@@ -4,13 +4,17 @@
 \alias{ws_intersect}
 \title{Intersect a river feature with a polygon feature}
 \usage{
-ws_intersect(x, areas, reach_id = "a_cat_", rip_buffer = 100,
+ws_intersect(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100,
   drainage = NA, use_sf = FALSE, ...)
 }
 \arguments{
 \item{x}{A river network; this should be a vector gis feature, either from the `sf` or `sp` packages}
 
 \item{areas}{A named list of areal features to summarize; should be polygon features from `sf` or `sp`}
+
+\item{area_id}{Character vector; the names of one or more columns in `areas` that should be summarised along
+the river feature; partial matching with regular expressions is allowed, but each item in `area_id` must identify 
+a single column in `areas`}
 
 \item{reach_id}{Name of the field in x that identifies stream segments}
 
@@ -21,6 +25,9 @@ ws_intersect(x, areas, reach_id = "a_cat_", rip_buffer = 100,
 \item{use_sf}{Boolean, if TRUE, functions from the sf package will be used whenever possible, if FALSE, GRASS will be used}
 
 \item{...}{Additional parameters to pass to [GrassSession()]}
+}
+\value{
+A data.table summarising the polygons in each layer in areas along the river provided in x.
 }
 \description{
 ws_intersect handles the use case where we want to summarize areal features, such as land use, soils, etc, across
