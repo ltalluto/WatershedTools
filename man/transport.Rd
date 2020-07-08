@@ -4,8 +4,16 @@
 \alias{transport}
 \title{Runs a transport-reaction model}
 \usage{
-transport(ws, initial, lateral, times, method = c("euler", "lsoda"),
-  dt = 1, rxn = NULL, rxnParams = list())
+transport(
+  ws,
+  initial,
+  lateral,
+  times,
+  method = c("euler", "lsoda"),
+  dt = 1,
+  rxn = NULL,
+  rxnParams = list()
+)
 }
 \arguments{
 \item{ws}{A [Watershed] object}

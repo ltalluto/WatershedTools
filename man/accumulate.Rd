@@ -4,8 +4,14 @@
 \alias{accumulate}
 \title{Returns all points in the watershed connecting two points, accumulating a value between}
 \usage{
-accumulate(ws, upstream, downstream = Inf, direction = c("down", "up"),
-  variable = "length", parallel = FALSE)
+accumulate(
+  ws,
+  upstream,
+  downstream = Inf,
+  direction = c("down", "up"),
+  variable = "length",
+  parallel = FALSE
+)
 }
 \arguments{
 \item{ws}{Watershed object}

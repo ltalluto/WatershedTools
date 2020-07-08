@@ -4,8 +4,18 @@
 \alias{extractStream}
 \title{Produce a map of a stream network}
 \usage{
-extractStream(dem, accumulation, threshold, qthresh = 0.95, weights, gs,
-  outputName, type = c("raster", "vector", "both"), file = NULL, ...)
+extractStream(
+  dem,
+  accumulation,
+  threshold,
+  qthresh = 0.95,
+  weights,
+  gs,
+  outputName,
+  type = c("raster", "vector", "both"),
+  file = NULL,
+  ...
+)
 }
 \arguments{
 \item{dem}{Raster or character; a digital elevation model, preferably one filled using [fillDEM()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.}

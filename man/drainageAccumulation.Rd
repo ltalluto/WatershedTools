@@ -4,8 +4,15 @@
 \alias{drainageAccumulation}
 \title{Watershed analysis tools}
 \usage{
-drainageAccumulation(dem, threshold = 250, gs, accumulation, drainage,
-  file = NULL, ...)
+drainageAccumulation(
+  dem,
+  threshold = 250,
+  gs,
+  accumulation,
+  drainage,
+  file = NULL,
+  ...
+)
 }
 \arguments{
 \item{dem}{Raster or character; a digital elevation model, preferably one filled using [fillDEM()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.}

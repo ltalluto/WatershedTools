@@ -6,7 +6,7 @@
 #' There are three potential outputs, which will be identified in the output by the 'method' column
 #' * `riparian`: The layers in `areas` are summarized within a riparian buffer surrounding each reach; 
 #'  		provided if `rip_buffer` is not NA.
-#' * `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each focual reach and all
+#' * `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each focal reach and all
 #'          upstream reaches; provided if `rip_buffer` is not NA and `drainage` is not NA
 #' * `catchment`: The layers in `areas` are summarized within the entire catchment for each reach, provided if
 #'          `drainage` is not NA
@@ -19,22 +19,16 @@
 #' @param reach_id Name of the field in x that identifies stream segments
 #' @param rip_buffer The width of the riparian buffer; if NA, then no buffered analysis will be done, see 'details'
 #' @param drainage Optional drainage direction raster for calculating catchment; see 'details'
-#' @param use_sf Boolean, if TRUE, functions from the sf package will be used whenever possible, if FALSE, GRASS will be used
+#' @param ws A watershed
 #' @param ... Additional parameters to pass to [GrassSession()]
 #' @return A data.table summarising the polygons in each layer in areas along the river provided in x.
 #' @export
-ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100, drainage = NA, use_sf = FALSE, ...) {
+ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100, drainage = NA, ws, ...) {
 	if(is(x, "Spatial"))
 		x = sf::st_as_sf(x)
 	if(!is(x, "sf"))
 		stop("x must inherit from either sf or Spatial")
-
-	if(use_sf) {
-		res = .ws_intersect_sf(x, areas, area_id, reach_id, rip_buffer, drainage)
-	} else {
-		res = .ws_intersect_grass(x, areas, area_id, reach_id, rip_buffer, drainage)
-	}
-	
+	res = .ws_intersect_sf(x, areas, area_id, reach_id, rip_buffer, drainage, ws, ...)
 	res
 }
 
@@ -52,37 +46,41 @@ ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100
 		x_buffer = sf::st_union(x_buffer)
 	}
 	
-	if(!is.na(drainage)) {
+	if(is(drainage, "RasterLayer")) {
 		dname = 'drainage'
 		gs = GrassSession(drainage, layerName = dname, override = TRUE, ...)
 		rids = unique(x[[reach_id]])
 		reach_bottoms = lapply(rids, function(i) {
-			ind = which(ws$data$vReachNumber == rid)
-			pt = as.integer(names(which(colSums(ws$adjacency[ind,ind]) == 0)))
+			ind = which(ws$data$vReachNumber == i)
+			pt = as.integer(names(which(colSums(ws$adjacency[ind,ind, drop=F]) == 0)))
 			as(ws$data[pt,], "SpatialPoints")
 		})
-		for(i in length(rids)) {
-			cment = catchment(reach_bottoms[[i]], dname, gs, areas = FALSE, vector = TRUE)
-			cment_polys = mapply(function(xx, yy) sf::st_intersection(xx, yy), xx = list(cment), yy = areas, SIMPLIFY = FALSE)
-			.... summarize
+
+		res = c(res, mapply(function(pt, rid) {
+			cment = catchment(pt, dname, gs, output = "sf")
+			## restore CRS, which gets corrupted a bit by grass
+			cment = sf::st_transform(cment, sf::st_crs(areas[[1]]))
+			cment_polys = mapply(function(xx, yy) sf::st_intersection(xx, yy), xx = list(cment), yy = areas, 
+								 SIMPLIFY = FALSE)
+			out = mapply(.sf_summary, x = cment_polys, by = area_id, layer = names(areas), 
+					MoreArgs = list(a_cat_ = rids[i], method = 'catchment'), SIMPLIFY = FALSE)
 			if(!is.na(x_buffer)) {
-				cment_polys_buff = mapply(function(xx, yy) sf::st_intersection(xx, yy), 
-					xx = list(x_buffer), yy = cment_polys)
-				.... summarize
-				.... combine with cment_polys summary
+				cment_polys_buff = mapply(function(xx, yy) sf::st_intersection(xx, yy),
+					xx = cment_polys, MoreArgs = list(yy=x_buffer), SIMPLIFY=FALSE)
+				out = c(out, mapply(.sf_summary, x = cment_polys, by = area_id, layer = names(areas), 
+					MoreArgs = list(a_cat_ = rid, method = 'catchment'), SIMPLIFY = FALSE))
 			}
-			.... rbind and return result (and convert to function and use lapply/mapply)
-		}
-		
+			out
+		}, reach_bottoms, rids))
 	}
-	
+
 	res = data.table::rbindlist(res)
 	return(res)
 }
 
 
 
-.ws_intersect_grass = function(x, areas, area_id, reach_id, rip_buffer, drainage) {
+.ws_intersect_grass = function(x, areas, area_id, reach_id, rip_buffer, drainage, ...) {
 	stop("not done yet")
 	if(is.na(drainage)) {
 		ras = raster::raster(ext = raster::extent(x), crs = sf::st_crs(areas[[1]])$proj4string, resolution  = 25)
@@ -92,45 +90,20 @@ ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100
 		layername = 'drainage'
 	}
 	gs = GrassSession(ras, layerName = layername, ...)
-	res = list()
-	res = c(res, mapply(.riv_buff_intersect, x = list(riv), y = areas, by = area_id, layer = names(areas),
-						MoreArgs = list(rip_buffer = rip_buffer, gs = gs, 
-										summarise = TRUE, subunit = reach_id, method = 'riparian'), SIMPLIFY = FALSE))
-	res = data.table::rbindlist(res)
+	rgrass7::writeVECT(as(x, "Spatial"), vname = "river", ignore.stderr=TRUE, v.in.ogr_flags="overwrite")
+	area_name = 'ri_polygon'
+	rgrass7::writeVECT(as(y, "Spatial"), vname = area_name, ignore.stderr=TRUE, v.in.ogr_flags="overwrite")
+	buff_name = 'riv_buff'
+	int_name = 'riv_isect'
+	rgrass7::execGRASS("v.buffer", flags = c('t', 'overwrite', 'quiet'), input = 'river', output = buff_name, 
+					   distance = rip_buffer, ignore.stderr=TRUE, Sys_ignore.stdout=TRUE)
+	rgrass7::execGRASS("v.overlay", flags = c('overwrite', 'quiet'), ainput = buff_name, binput = area_name, output = int_name, 
+					   operator='and', ignore.stderr=TRUE, Sys_ignore.stdout=TRUE)
+
+	
 }
 
 
-
-
-#' Helper function for creating river buffers, choosing either sf or grass
-#' @param x A river network; this should be a vector gis feature, either from the `sf` or `sp` packages
-#' @param rip_buffer The width of the riparian buffer
-#' @param gs A grass session, if missing or NA, then sf functions will be used
-#' @return A polygon layer of class 'sf' if gs is missing or NA, otherwise a character string giving the name
-#' of the grass layer
-#' @keywords internal
-.riv_buff_intersect = function(x, y, rip_buffer, gs, summarise = FALSE, ...) {
-	if(missing(gs) || is.na(gs)) {
-	} else {
-		rgrass7::writeVECT(as(x, "Spatial"), vname = "river", ignore.stderr=TRUE, v.in.ogr_flags="overwrite")
-		area_name = 'ri_polygon'
-		rgrass7::writeVECT(as(y, "Spatial"), vname = area_name, ignore.stderr=TRUE, v.in.ogr_flags="overwrite")
-		buff_name = 'riv_buff'
-		int_name = 'riv_isect'
-		rgrass7::execGRASS("v.buffer", flags = c('t', 'overwrite', 'quiet'), input = 'river', output = buff_name, 
-						   distance = rip_buffer, ignore.stderr=TRUE, Sys_ignore.stdout=TRUE)
-		rgrass7::execGRASS("v.overlay", flags = c('overwrite', 'quiet'), ainput = buff_name, binput = area_name, output = int_name, 
-						   operator='and', ignore.stderr=TRUE, Sys_ignore.stdout=TRUE)
-		x_isect = rgrass7::readVECT(int_name, ignore.stderr=TRUE)
-		if(is(x_isect, "Spatial"))
-			x_isect = sf::st_as_sf(x_isect)
-	}
-	if(summarise) {
-		return(.sf_summary(x_isect, ...))
-	} else {
-		return(x_isect)
-	}
-}
 
 #' Summarise an sf polygon feature by attributes
 #' @details Additional arguments can be supplied to add columns to the output. For example, adding `category = 2` will add a column

@@ -4,8 +4,16 @@
 \alias{ws_intersect}
 \title{Intersect a river feature with a polygon feature}
 \usage{
-ws_intersect(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100,
-  drainage = NA, use_sf = FALSE, ...)
+ws_intersect(
+  x,
+  areas,
+  area_id,
+  reach_id = "a_cat_",
+  rip_buffer = 100,
+  drainage = NA,
+  ws,
+  ...
+)
 }
 \arguments{
 \item{x}{A river network; this should be a vector gis feature, either from the `sf` or `sp` packages}
@@ -22,7 +30,7 @@ a single column in `areas`}
 
 \item{drainage}{Optional drainage direction raster for calculating catchment; see 'details'}
 
-\item{use_sf}{Boolean, if TRUE, functions from the sf package will be used whenever possible, if FALSE, GRASS will be used}
+\item{ws}{A watershed}
 
 \item{...}{Additional parameters to pass to [GrassSession()]}
 }
@@ -37,7 +45,7 @@ reaches of a river, while taking into account drainage area, flow, etc.
 There are three potential outputs, which will be identified in the output by the 'method' column
 * `riparian`: The layers in `areas` are summarized within a riparian buffer surrounding each reach; 
  		provided if `rip_buffer` is not NA.
-* `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each focual reach and all
+* `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each focal reach and all
          upstream reaches; provided if `rip_buffer` is not NA and `drainage` is not NA
 * `catchment`: The layers in `areas` are summarized within the entire catchment for each reach, provided if
          `drainage` is not NA

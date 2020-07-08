@@ -1,12 +1,14 @@
 #' Catchment deliniation
 #' 
-#' @param x An [sp::SpatialPoints] objector a matrix of x-y coordinates
+#' @param x An object of class [sp::SpatialPoints], [sf::sf], or a matrix of x-y coordinates
 #' @param drainage Raster or character, Drainage direction raster, from e.g., [accumulate()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.
 #' @param gs An optional [GrassSession()]; if missing a new one will be created
-#' @param areas Logical; if `TRUE`, returns catchment area for each point, otherwise returns
+#' @param areas DEPRECATED, use `output` instead. Logical; if `TRUE`, returns catchment area for each point, 
+#'  otherwise returns
 #'  a [raster::RasterStack], one layer per point, with each layer delimiting the catchment for its
 #'  respective point.
-#' @param file The file name of the raster to be returned (if `areas` is `FALSE`), see `details`.
+#' @param file The file name of the raster to be returned if `output='raster'`, see `details`.
+#' @param output One of 'area', 'raster', 'sf' determining the output format
 #' @param ... Additional parameters to pass to [GrassSession()]
 #' @details This is a wrapper for [r.water.outlet](https://grass.osgeo.org/grass74/manuals/r.water.outlet.html)
 #' 
@@ -23,11 +25,23 @@
 #' 		`cAreas <- catchment(points, drain_name = "drainage", grass_session = gs, areas = TRUE)`
 #' 	However note that one raster file is created *per point* in x, thus it is a good idea
 #' 	with many points to specify area = TRUE to get area (rather than the raster) for each point
-#' @return A vector of catchment areas (if `areas = TRUE`), otherwise a [raster::stack()] of 
-#'   delineated catchments
+#' @return Depends on the value of the argument `output`:
+#'  * 'area': a vector of catchment areas, one per point in x
+#'  * 'raster': a [rasterLayer][raster::raster()] (either a single raster or a stack, if length(x) > 1)
+#'  * 'sf': a polygon layer of class 'sf'
 #' @export
-catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
+catchment <- function(x, drainage, gs, areas, file = NULL, output = c('area', 'raster', 'sf'), ...)
 {
+	output = match.arg(output)
+	if(!missing(areas)) {
+		warning("Argument areas is deprecated; use output instead")
+		if(areas) {
+			output = 'area'
+		} else {
+			output = 'raster'
+		}
+	}
+	
 	if(missing(gs)) {
 		gs <- GrassSession(drainage, layerName = "drainage", ...)
 		drainage <- "drainage"
@@ -36,35 +50,51 @@ catchment <- function(x, drainage, gs, areas = TRUE, file = NULL, ...)
 		drainage <- "drainage"
 	}
 
-	if(!is.matrix(x) & is.numeric(x)) {
-		x <- matrix(x, ncol=2)
-	} else if(!is.matrix(x)) {
-		x <- sp::coordinates(x)
+	if(is(x, "Spatial")) {
+		x = sp::coordinates(x)
+	} else if(is(x, 'sf')) {
+		x = sf::st_coordinates(x)
+	} else if(!is.matrix(x) & is.numeric(x)) {
+		x = matrix(x, ncol=2)
 	}
 
-	result <- if(areas) numeric(nrow(x)) else list()
+	result <- list()
 	catchName <- "catchment"
 	for(i in 1:nrow(x))
 	{
 		rgrass7::execGRASS("r.water.outlet", flags=c("overwrite", "quiet"), input = drainage, 
 			output = catchName, coordinates = x[i,])
-		if(areas) {
-			result[i] <- catchmentArea(catchName, gs)
-		} else {
-			ras <- GSGetRaster(catchName, gs)
-			ras[ras == 0] <- NA
-			result <- c(result, ras)
+		if(output == 'area') {
+			result[[i]] = catchmentArea(catchName, gs)
+		} else if(output == 'raster') {
+			ras = GSGetRaster(catchName, gs)
+			ras[ras == 0] = NA
+			result = c(result, ras)
+		} else if(output == 'sf') {
+			if(nrow(x) > 1)
+				stop("Output to sf is not supported with more than a single input point")
+			vname = paste0(catchName, "_v")
+			rgrass7::execGRASS("r.to.vect", flags = c('overwrite', 'quiet'), input = catchName, 
+				output = vname, type = 'area', column='value')
+			vect = sf::st_as_sf(rgrass7::readVECT(vname, ignore.stderr = TRUE))
+			result[[i]] = vect
 		}
 	}
-	if(!areas) {
+	
+	if(output == 'area') {
+		result = unlist(result)	
+	} else if(output == 'raster') {
 		if(length(result) > 1) {
-			result <- stack(result)
+			result = raster::stack(result)
 		} else {
-			result <- result[[1]]
+			result = result[[1]]
 		}
 		if(!missing(file))
-			result <- writeRaster(result, file)
+			result = writeRaster(result, file)
+	} else if(output == 'sf') {
+		result = result[[1]]
 	}
+
 	return(result)
 }
 

@@ -4,8 +4,14 @@
 \alias{q_from_flow}
 \title{Compute discharge from flow measurements}
 \usage{
-q_from_flow(depth, velocity, flowID = rep(1, length(depth)), width,
-  widthID = rep(1, length(width)), na.rm = FALSE)
+q_from_flow(
+  depth,
+  velocity,
+  flowID = rep(1, length(depth)),
+  width,
+  widthID = rep(1, length(width)),
+  na.rm = FALSE
+)
 }
 \arguments{
 \item{depth}{a vector of depth measurements}

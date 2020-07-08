@@ -4,26 +4,39 @@
 \alias{catchment}
 \title{Catchment deliniation}
 \usage{
-catchment(x, drainage, gs, areas = TRUE, file = NULL, ...)
+catchment(
+  x,
+  drainage,
+  gs,
+  areas,
+  file = NULL,
+  output = c("area", "raster", "sf"),
+  ...
+)
 }
 \arguments{
-\item{x}{An [sp::SpatialPoints] objector a matrix of x-y coordinates}
+\item{x}{An object of class [sp::SpatialPoints], [sf::sf], or a matrix of x-y coordinates}
 
 \item{drainage}{Raster or character, Drainage direction raster, from e.g., [accumulate()]. If specified as a character, a layer with that name from the existing [GrassSession()] given by gs will be used.}
 
 \item{gs}{An optional [GrassSession()]; if missing a new one will be created}
 
-\item{areas}{Logical; if `TRUE`, returns catchment area for each point, otherwise returns
+\item{areas}{DEPRECATED, use `output` instead. Logical; if `TRUE`, returns catchment area for each point, 
+otherwise returns
 a [raster::RasterStack], one layer per point, with each layer delimiting the catchment for its
 respective point.}
 
-\item{file}{The file name of the raster to be returned (if `areas` is `FALSE`), see `details`.}
+\item{file}{The file name of the raster to be returned if `output='raster'`, see `details`.}
+
+\item{output}{One of 'area', 'raster', 'sf' determining the output format}
 
 \item{...}{Additional parameters to pass to [GrassSession()]}
 }
 \value{
-A vector of catchment areas (if `areas = TRUE`), otherwise a [raster::stack()] of 
-  delineated catchments
+Depends on the value of the argument `output`:
+ * 'area': a vector of catchment areas, one per point in x
+ * 'raster': a [rasterLayer][raster::raster()] (either a single raster or a stack, if length(x) > 1)
+ * 'sf': a polygon layer of class 'sf'
 }
 \description{
 Catchment deliniation
