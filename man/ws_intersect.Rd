@@ -4,19 +4,10 @@
 \alias{ws_intersect}
 \title{Intersect a river feature with a polygon feature}
 \usage{
-ws_intersect(
-  x,
-  areas,
-  area_id,
-  reach_id = "a_cat_",
-  rip_buffer = 100,
-  drainage = NA,
-  ws,
-  ...
-)
+ws_intersect(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...)
 }
 \arguments{
-\item{x}{A river network; this should be a vector gis feature, either from the `sf` or `sp` packages}
+\item{ws}{A Watershed}
 
 \item{areas}{A named list of areal features to summarize; should be polygon features from `sf` or `sp`}
 
@@ -24,13 +15,9 @@ ws_intersect(
 the river feature; partial matching with regular expressions is allowed, but each item in `area_id` must identify 
 a single column in `areas`}
 
-\item{reach_id}{Name of the field in x that identifies stream segments}
-
-\item{rip_buffer}{The width of the riparian buffer; if NA, then no buffered analysis will be done, see 'details'}
+\item{rip_buffer}{The width of the riparian buffer}
 
 \item{drainage}{Optional drainage direction raster for calculating catchment; see 'details'}
-
-\item{ws}{A watershed}
 
 \item{...}{Additional parameters to pass to [GrassSession()]}
 }

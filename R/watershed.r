@@ -207,10 +207,27 @@ headwaters <- function(ws) {
 #' Get data from all outlets of a watershed
 #' 
 #' @param ws Watershed object
-#' @return a `data.frame` containing data for all outlets
+#' @param rid vector of reach IDs, if NA returns outlet for entire network
+#' @param output Output type to return
+#' @return a `data.frame` or a `SpatialPixelsDataFrame` containing data for all outlets 
 #' @export
-outlets <- function(ws) {
-	as.data.frame(ws$data[Matrix::colSums(ws$adjacency) == 0,])
+outlets <- function(ws, rid = NA, output = c("data.frame", "Spatial")) {
+	output = match.arg(output)
+	if(!is.na(rid)) {
+		out_ind = sapply(rid, function(i) {
+			ii = which(ws$data$reachID == i)
+			mat = ws$adjacency[ii,ii]
+			pix = which(Matrix::colSums(mat) == 0)
+			as.integer(rownames(mat)[pix])
+		})
+	} else {
+		out_ind = which(Matrix::colSums(ws$adjacency) == 0)
+	}
+	res = ws$data[out_ind,]
+	if(output == "data.frame") {
+		res = as.data.frame(res)
+	}
+	res
 }
 
 

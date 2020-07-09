@@ -4,13 +4,17 @@
 \alias{outlets}
 \title{Get data from all outlets of a watershed}
 \usage{
-outlets(ws)
+outlets(ws, rid = NA, output = c("data.frame", "Spatial"))
 }
 \arguments{
 \item{ws}{Watershed object}
+
+\item{rid}{vector of reach IDs, if NA returns outlet for entire network}
+
+\item{output}{Output type to return}
 }
 \value{
-a `data.frame` containing data for all outlets
+a `data.frame` or a `SpatialPixelsDataFrame` containing data for all outlets
 }
 \description{
 Get data from all outlets of a watershed
