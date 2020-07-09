@@ -56,6 +56,26 @@ ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100
 			as(ws$data[pt,], "SpatialPoints")
 		})
 
+		for(i in seq_len(rids)) {
+			pt = reach_bottoms[[i]]
+			rid = rids[i]
+			cment = catchment(pt, dname, gs, output = "sf")
+			cment = sf::st_transform(cment, sf::st_crs(areas[[1]]))
+			cment_polys = mapply(function(xx, yy) sf::st_intersection(xx, yy), xx = list(cment), yy = areas, 
+								 SIMPLIFY = FALSE)
+			out = mapply(.sf_summary, x = cment_polys, by = area_id, layer = names(areas), 
+						 MoreArgs = list(a_cat_ = rids[i], method = 'catchment'), SIMPLIFY = FALSE)
+		
+			if(!is.na(x_buffer)) {
+				cment_polys_buff = mapply(function(xx, yy) sf::st_intersection(xx, yy),
+										  xx = cment_polys, MoreArgs = list(yy=x_buffer), SIMPLIFY=FALSE)
+				out = c(out, mapply(.sf_summary, x = cment_polys, by = area_id, layer = names(areas), 
+									MoreArgs = list(a_cat_ = rid, method = 'catchment'), SIMPLIFY = FALSE))
+			}
+			res = c(res, out)
+		}
+		
+		
 		res = c(res, mapply(function(pt, rid) {
 			cment = catchment(pt, dname, gs, output = "sf")
 			## restore CRS, which gets corrupted a bit by grass
@@ -112,7 +132,7 @@ ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100
 #' @param x An sf polygon
 #' @param by Character vector, column names giving factors to summarise along. Partial matching with regular expressions
 #' is allowed, as long as the result is unique.
-#' @param subunit Optional character vector; If included, it will be used as a grouble variable(s) when computing proportions;
+#' @param subunit Optional character vector; If included, it will be used as a group variable(s) when computing proportions;
 #' variables here will also be used as grouping variables as in 'by'
 #' @param ... Additional named arguments, see 'details'
 #' @import data.table
@@ -140,5 +160,7 @@ ws_intersect = function(x, areas, area_id, reach_id = "a_cat_", rip_buffer = 100
 	for(nm in names(args)) {
 		areas[, nm] = args[[nm]]
 	}
+	colnames(areas)[grep(by[1], colnames(areas))] = "category"
+	areas$category_colname = by[1]
 	return(areas)
 }
