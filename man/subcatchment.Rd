@@ -15,6 +15,6 @@ subcatchment(ws, x)
 A watershed.
 }
 \description{
-This function returns a complete subset watershed object, including all tributaties upstream
+This function returns a complete subset watershed object, including all triburaties upstream
 from a specified point. PixelIDs and reachIDs will be renumbered.
 }

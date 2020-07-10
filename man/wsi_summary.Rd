@@ -19,7 +19,7 @@
 A data.table with the following columns:
  * method: The method used, either 'riparian', 'riparian_upstream', or 'catchment'
  * layer: The layer of origin for each row
- * category: The numeric category from the raster layer of each row
+ * value: The numeric value from the raster layer of each row
  * area: The area occupied by the category
  * proportion: The proportion of area (within the method and layer)
 }

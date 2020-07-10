@@ -43,7 +43,12 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...)
 	
 	res = lapply(unique(ws$data$reachID), .do_ws_intersect, y = areas, ws = ws, 
 				 width = rip_buffer, gs = gs, dname = dname, riv_buff = riv_buff)
-	rbindlist(res)
+	res = rbindlist(res)
+	res$category = ""
+	for(lyr in names(area_tables))
+		res$category[res$layer == lyr] = area_tables[[lyr]][res[layer == lyr, value]]
+	res$value = NULL
+	res
 }
 
 #' Helper function to perform the watershed intersection on a single reach
@@ -58,7 +63,7 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...)
 	reach = ws$data[ws$data$reachID == x,]
 	reach = sf::st_as_sf(reach)
 	rb = sf::st_buffer(reach, width)
-	ras = raster::raster(ext=extent(as(rb, "Spatial")), res=res(y))
+	ras = raster::raster(ext=extent(as(rb, "Spatial")), res=raster::res(y))
 	rb = fasterize::fasterize(rb, ras)
 	yy = raster::crop(y, rb)
 	rb = raster::resample(rb, yy)
@@ -85,7 +90,7 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...)
 #' @return A data.table with the following columns:
 #'  * method: The method used, either 'riparian', 'riparian_upstream', or 'catchment'
 #'  * layer: The layer of origin for each row
-#'  * category: The numeric category from the raster layer of each row
+#'  * value: The numeric value from the raster layer of each row
 #'  * area: The area occupied by the category
 #'  * proportion: The proportion of area (within the method and layer)
 #' @keywords internal
@@ -107,8 +112,8 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...)
 #' @import data.table
 .wsi_summary_single = function(ras) {
 	tab = lapply(1:raster::nlayers(ras), function(i) table(raster::values(ras[[i]])))
-	area = lapply(tab, function(x) x * prod(raster::res(riparian)))
+	area = lapply(tab, function(x) x * prod(raster::res(ras)))
 	prop = lapply(area, function(x) x / sum(x))
-	rbindlist(mapply(function(a, p, lyr) data.table(layer = lyr, category = as.numeric(names(a)), 
+	rbindlist(mapply(function(a, p, lyr) data.table(layer = lyr, value = as.numeric(names(a)), 
 			area = as.vector(a), proportion = as.vector(p)), area, prop, names(ras), SIMPLIFY=FALSE))
 }
