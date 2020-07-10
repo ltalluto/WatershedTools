@@ -211,9 +211,9 @@ headwaters <- function(ws) {
 #' @param output Output type to return
 #' @return a `data.frame` or a `SpatialPixelsDataFrame` containing data for all outlets 
 #' @export
-outlets <- function(ws, rid = NA, output = c("data.frame", "Spatial")) {
+outlets <- function(ws, rid, output = c("data.frame", "Spatial")) {
 	output = match.arg(output)
-	if(!is.na(rid)) {
+	if(!missing(rid)) {
 		out_ind = sapply(rid, function(i) {
 			ii = which(ws$data$reachID == i)
 			mat = ws$adjacency[ii,ii]
