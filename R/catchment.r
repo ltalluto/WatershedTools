@@ -147,7 +147,7 @@ cropToCatchment <- function(x, streamRaster, streamVector, drainage, gs, file, t
 	if(missing(gs))
 	 	gs <- GrassSession(drainage, layerName = "cropToCatchment_drainage", ...)
 
-	crCatchment <- catchment(x, drainage, gs, areas = FALSE)
+	crCatchment <- catchment(x, drainage, gs, output = "raster")
 	if(is.character(streamRaster))
 		streamRaster <- GSGetRaster(streamRaster, gs)
 	

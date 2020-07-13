@@ -11,20 +11,11 @@ subcatchment = function(ws, x) {
 	newNums = 1:length(newSet)
 	dat = ws$data[newSet,]
 	dat$id = newNums
-	oldReaches = dat$reachID
-	dat$reachID = renumberReaches(dat$reachID)
 
 	adj = ws$adjacency[newSet, newSet]
 	rownames(adj) = colnames(adj) = newNums
-	reach_adj = ws$reach_adjacency[oldReaches, oldReaches]
-	rownames(reach_adj) = colnames(reach_adj) = dat$reachID
-	reach_conn = ws$reach_connectivity[oldReaches, oldReaches]
-	rownames(reach_conn) = colnames(reach_conn) = dat$reachID
-	wsobj = list(data = dat, adjacency = adj, reach_adjacency = reach_adj, 
-			reach_connectivity = reach_conn)
+	wsobj = list(data = dat, adjacency = adj)
 	class(wsobj) = class(ws)
-	wsobj$reach_adjacency = reachByReachAdj(wsobj)
-	wsobj$reach_connectivity = reachByReachConn(wsobj, self = FALSE)
-
-	wsobj
+	
+	.rebuild_reach_topology(wsobj)
 }

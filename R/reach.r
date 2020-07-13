@@ -12,15 +12,22 @@
 #' @param ws A watershed
 #' @param size Reach size; the desired reach size, see 'details'
 #' @param min_size Minimum reach size
+#' @param parallel Use the parallel package to speed computation on mac/linux?
 #' @return A modified watershed
-resize_reaches = function(ws, size, min_size) {
-	ws = .trim_reaches(ws, min_size)
+resize_reaches = function(ws, size, min_size, parallel=TRUE) {
+	ws = trim_reaches(ws, min_size, rebuild = FALSE)
 	vals = rep(0, nrow(ws$data))
 	reaches = unique(ws$data$reachID)
 	pixes = lapply(reaches, function(x) which(ws$data$reachID == x))
 	adj = lapply(pixes, function(x) ws$adjacency[x,x, drop=FALSE])
 	len = lapply(pixes, function(x) ws$data$length[x])
-	nums = mapply(.resize_reach, adj, len, MoreArgs = list(size = size, min_size = min_size), SIMPLIFY=FALSE)
+	
+	if(parallel) {
+		nums = parallel::mcmapply(.resize_reach, adj, len, MoreArgs = list(size = size, min_size = min_size), SIMPLIFY=FALSE)
+	} else {
+		nums = mapply(.resize_reach, adj, len, MoreArgs = list(size = size, min_size = min_size), SIMPLIFY=FALSE)
+	}
+
 	if(length(nums) > 1) {
 		for(i in 2:length(nums))
 			nums[[i]] = nums[[i]] + max(nums[[i-1]])
@@ -30,18 +37,81 @@ resize_reaches = function(ws, size, min_size) {
 	}
 	ws$data$reachID = vals
 	
-	## now renumber them, starting with the headwaters
-	ws = .new_renumber_reaches_headwaters(ws)
-	ws$reach_adjacency = reachByReachAdj(ws)
-	ws$reach_connectivity = reachByReachConn(ws, self = FALSE)
-	return(ws)
+	.rebuild_reach_topology(ws)
 }
 
 #' Remove short headwater reaches below a certain threshold
-.trim_reaches = function(ws, size) {
-	stop("finish me")
-	hw = headwaters(ws)$reachID
+#' @param ws A watershed
+#' @param size The minimum size of a reach to retain, in map units
+#' @param rebuild Boolean; should topology be rebuilt? Normally yes, but can set to FALSE if it will be rebuilt later
+#' @return A modified watershed
+#' @export
+trim_reaches = function(ws, size, rebuild = TRUE) {
+	find_short_reaches = function(ws, size) {
+		lens = tapply(ws$data$length, ws$data$reachID, sum)
+		reaches = data.table::data.table(reachID = as.integer(names(lens)), length = unname(lens))
+		reaches$hw = 0
+		hw = headwaters(ws)$reachID
+		reaches$hw[match(hw, reaches$reachID)] = 1
+		reaches = reaches[length < size & hw == 1]
+		pix_ids = which(ws$data$reachID %in% reaches$reachID)
+		pix_ids
+	}
+	
+	changed = FALSE
+	pix_ids = find_short_reaches(ws, size)
+	while(length(pix_ids) > 0) {
+		changed = TRUE
+		ws$data = ws$data[-pix_ids,]
+		ws$data$id = 1:nrow(ws$data)
+		ws$adjacency = ws$adjacency[-pix_ids, -pix_ids]
+		rownames(ws$adjacency) = colnames(ws$adjacency) = ws$data$id
+		pix_ids = find_short_reaches(ws, size)
+	}
+	if(rebuild && changed)
+		ws = .rebuild_reach_topology(ws)
+	return(ws)
+}
 
+#' Splits a reachID at selected points
+#' @param ws A watershed object
+#' @param points A vector of ids at which to split reaches
+#' @param na_ignore Logical, if `TRUE` NAs will be dropped from the data. If `FALSE`, any NAs
+#' 		in `points` will cause an error.
+#' @return A modified watershed with new reachIDs
+#' @export
+splitReaches <- function(ws, points, na_ignore = FALSE) {
+	if(na_ignore & any(is.na(points))) {
+		points <- points[!is.na(points)]
+	} else if(any(is.na(points))) {
+		stop("NA in points; use na_ignore = TRUE to ignore")
+	}
+	for(pt in points) {
+		ids <- which(ws$data$reachID == ws$data$reachID[pt])
+		reachAdj <- ws$adjacency[ids, ids]
+		mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
+		if(pt != mostUpstream) {
+			chIds <- connect(ws, mostUpstream, pt)
+			ws$data$reachID[chIds] <- max(ws$data$reachID) + 1
+		}
+	}
+	
+	# re-create topology
+	.rebuild_reach_topology(ws)
+}
+
+
+#' Reconstruct the reach topology
+#' 
+#' After editing a watershed's pixels or reaches, the reach topology will need to be rebuilt using this function.
+#' @param ws
+#' @return A modified watershed
+#' @keywords internal
+.rebuild_reach_topology = function(ws) {
+	ws = .renumber_reaches(ws)
+	ws$reach_adjacency = .create_reach_adjacency(ws)
+	ws$reach_connectivity = .create_reach_connectivity(ws, self = FALSE)
+	ws
 }
 
 #' Resize a single reach
@@ -52,8 +122,12 @@ resize_reaches = function(ws, size, min_size) {
 #' @param size Reach size; the desired reach size, see 'details'
 #' @param min_size Minimum reach size
 .resize_reach = function(adj, len, size, min_size, start = 1) {
-	rnums = rep(0, nrow(adj))
-	c_reach = which(rowSums(adj) == 0)
+	if(sum(len) <= size) {
+		rnums = rep(start, nrow(adj))
+	} else {
+		rnums = rep(0, nrow(adj))
+	}
+	c_reach = which(Matrix::rowSums(adj) == 0)
 	while(any(rnums == 0)) {
 		while(sum(len[c_reach]) < size) {
 			nxt = which(adj[,c_reach[length(c_reach)]] == 1)
@@ -72,12 +146,22 @@ resize_reaches = function(ws, size, min_size) {
 			}
 		}
 	}
+
 	return(rnums)
+}
+
+#' Renumber reachIDs to start at 1 and increase one at a time, preserving ordering
+#' @keywords internal
+renumberReaches <- function(rIDs) {
+	stop("Function is deprecated, use .renumber_reaches")
+	newNums <- 1:length(unique(rIDs))
+	oldNums <- sort(unique(rIDs))
+	newNums[match(rIDs, oldNums)]
 }
 
 #' Renumber reaches, starting with one at the headwaters
 #' @param ws A watershed
-.new_renumber_reaches_headwaters = function(ws) {
+.renumber_reaches = function(ws) {
 	result = rep(0, nrow(ws$data))
 	reaches = headwaters(ws)$reachID
 	while(any(result == 0)) {
@@ -95,3 +179,51 @@ resize_reaches = function(ws, size, min_size) {
 	ws$data$reachID = result
 	ws
 }
+
+
+#' Produce a reach by reach connectivity matrix
+#' 
+#' @param ws A watershed
+#' @param self If TRUE, a reach is considered connected to itself
+#' Nonzero values indicate that a reachID in a row is downstream from that column
+#' @return A [Matrix::sparseMatrix()]
+#' @keywords internal
+.create_reach_connectivity <- function(ws, self = TRUE) {
+	adj <- ws$reach_adjacency
+	if(self)
+		diag(adj) <- 1
+	for(i in 1:nrow(adj))
+		adj <- adj %*% adj + adj
+	adj[adj != 0] <- 1
+	adj
+}
+
+
+#' Produce a reach by reach adjacency matrix
+#' @keywords internal
+.create_reach_adjacency = function(ws) {
+	if(max(ws$data$reachID) != length(unique(ws$data$reachID)))
+		stop("ReachIDs not in 1:length(unique(reachID)); they must be renumbered")
+	
+	reaches = sort(unique(ws$data$reachID))
+	adjMat = parallel::mclapply(reaches, function(r) reachAdj(ws, r))
+	adjMat = do.call(rbind, adjMat)
+	adjspMat = Matrix::sparseMatrix(adjMat[,1], adjMat[,2], dims=rep(max(ws$data$reachID), 2),
+									 dimnames = list(reaches, reaches))
+	adjspMat
+}
+
+#' Find all reaches directly upstream from a given reach
+#' @keywords internal
+reachAdj <- function(ws, rch) {
+	ids <- which(ws$data$reachID == rch)
+	reachAdj <- ws$adjacency[ids,ids, drop = FALSE]
+	mostUpstream <- ids[which(Matrix::rowSums(reachAdj) == 0)]
+	adjMatUp <- as.matrix(ws$adjacency[mostUpstream,])
+	upRch <- which(adjMatUp == 1)
+	if(length(upRch) > 0) {
+		upRch <- ws$data$reachID[upRch]
+		return(cbind(rch, upRch))
+	} else return(NULL)
+}
+
