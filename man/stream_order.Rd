@@ -4,18 +4,9 @@
 \alias{stream_order}
 \title{Compute stream order}
 \usage{
-stream_order(
-  stream,
-  drainage,
-  elevation,
-  gs,
-  outputName,
-  type = c("strahler", "horton", "shreve", "hack", "topo"),
-  file,
-  install = FALSE,
-  force = FALSE,
-  ...
-)
+stream_order(stream, drainage, elevation, gs, outputName,
+  type = c("strahler", "horton", "shreve", "hack", "topo"), file,
+  install = FALSE, force = FALSE, ...)
 }
 \arguments{
 \item{stream}{Raster or character; stream raster.}

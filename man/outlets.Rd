@@ -4,7 +4,7 @@
 \alias{outlets}
 \title{Get data from all outlets of a watershed}
 \usage{
-outlets(ws, rid = NA, output = c("data.frame", "Spatial"))
+outlets(ws, rid, output = c("data.frame", "Spatial"))
 }
 \arguments{
 \item{ws}{Watershed object}

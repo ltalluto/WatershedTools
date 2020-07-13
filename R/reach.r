@@ -14,6 +14,7 @@
 #' @param min_size Minimum reach size
 #' @param parallel Use the parallel package to speed computation on mac/linux?
 #' @return A modified watershed
+#' @export
 resize_reaches = function(ws, size, min_size, parallel=TRUE) {
 	ws = trim_reaches(ws, min_size, rebuild = FALSE)
 	vals = rep(0, nrow(ws$data))
@@ -104,7 +105,7 @@ splitReaches <- function(ws, points, na_ignore = FALSE) {
 #' Reconstruct the reach topology
 #' 
 #' After editing a watershed's pixels or reaches, the reach topology will need to be rebuilt using this function.
-#' @param ws
+#' @param ws A watershed
 #' @return A modified watershed
 #' @keywords internal
 .rebuild_reach_topology = function(ws) {

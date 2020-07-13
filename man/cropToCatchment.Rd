@@ -4,16 +4,8 @@
 \alias{cropToCatchment}
 \title{Crops a delineated stream to the catchment at a specified point}
 \usage{
-cropToCatchment(
-  x,
-  streamRaster,
-  streamVector,
-  drainage,
-  gs,
-  file,
-  trim = TRUE,
-  ...
-)
+cropToCatchment(x, streamRaster, streamVector, drainage, gs, file,
+  trim = TRUE, ...)
 }
 \arguments{
 \item{x}{The point at which to compute the catchment}

@@ -11,9 +11,12 @@
 .wsi_summary_single(ras)
 }
 \arguments{
-\item{ras}{A raster stack}
+\item{ras}{A named list of raster stacks. The names of this list will be used for the 'method' column.
+Layer names in each raster stack will give the layer name}
 
 \item{...}{Additional (single-valued) attributes to add to the output table}
+
+\item{ras}{A raster stack}
 }
 \value{
 A data.table with the following columns:

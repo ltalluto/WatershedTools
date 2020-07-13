@@ -4,7 +4,8 @@
 \alias{transport_euler}
 \title{Do euler integration for the transport model}
 \usage{
-transport_euler(initial, parms, times, dt, rxn = NULL, rxnParams = list())
+transport_euler(initial, parms, times, dt, rxn = NULL,
+  rxnParams = list())
 }
 \arguments{
 \item{initial}{A vector of initial conditions}
