@@ -1,11 +1,10 @@
-context("Catchment Area")
 library("WatershedTools")
 
 tryCatch(rgrass7::use_sp(), error = function (e) NULL)
 
 test_that("Test the catchment area workflow with rasters", {
 	skip_on_cran()
-	gisBase <<- getGISBase()
+	gisBase <<- WatershedTools:::getGISBase()
 	testDEM <<- raster::raster(system.file("testdata/testDEM.grd", package="WatershedTools"))
 	gs <<- GrassSession(testDEM, layerName = "dem", gisBase = gisBase)
 	gs <<- fillDEM("dem", filledDEM = "filledDEM", probs = "problems", gs = gs)
@@ -30,7 +29,6 @@ test_that("Crop to catchment", {
 	expect_equal(sum(vals > 0, na.rm = T), 5777)
 	expect_equal(sum(vals == 0, na.rm = T), 0)
 	expect_equal(sum(vals > 0, na.rm = T) + sum(is.na(vals)), raster::ncell(streamCrop$raster))
-	vectPr <- sp::spTransform(streamCrop$vector, sp::CRS("+init=epsg:32632"))
 })
 
 

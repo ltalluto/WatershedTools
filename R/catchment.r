@@ -130,7 +130,7 @@ catchmentArea <- function(layer, gs)
 #' @param x The point at which to compute the catchment
 #' @param streamRaster A RasterLayer stream delineation (required), or character giving the 
 #' 		name of a Grass object
-#' @param streamVector A SpatialLines stream delineation (optional), or character giving the 
+#' @param streamVector A SpatialLines or sf stream delineation (optional), or character giving the 
 #' 		name of a Grass object
 #' @param drainage Raster or character, Drainage direction raster, from e.g., [accumulate()]. 
 #' 		If specified as a character, a layer with that name from the existing [GrassSession()]
@@ -159,28 +159,35 @@ cropToCatchment <- function(x, streamRaster, streamVector, drainage, gs, file, t
 		output <- raster::writeRaster(output, file)
 
 	if(!missing(streamVector)) {
-		if(any(grepl('SpatialLines', class(streamVector)))) {
-			rgrass7::writeVECT(streamVector, "cropToCatchment_streamVector", 
-				v.in.ogr_flags = "overwrite", ignore.stderr=TRUE)
-			streamVector <- "cropToCatchment_streamVector"
+		crCatchment <- catchment(x, drainage, gs, output = "sf")
+		if(methods::is(streamVector, "SpatialLines")) {
+			streamVector = sf::st_as_sf(streamVector)
 		}
-		catchVname <- "cropToCatchment_catchArea"
-		GSRastToPoly(crCatchment, catchVname, gs)
 		
-		oname <- "cropToCatchment_output"
-		rgrass7::execGRASS("v.overlay", flags = c("overwrite", "quiet"), ainput = streamVector,
-			atype = "line", binput = catchVname, operator = "and", output = oname)
-		vout <- rgrass7::readVECT(oname)
-		if(trim)
-			vout <- raster::crop(vout, output)
+		vout = tryCatch(sf::st_intersection(streamVector, crCatchment), 
+				error = function(e) {
+					suppressWarnings(
+						pts <- lapply(1:nrow(streamVector), function(x) sf::st_cast(streamVector[x,], "POINT"))
+					)
+					badrows = which(sapply(pts, nrow) == 1)
+					if(length(badrows > 0)) {
+						warning(length(badrows), " lines consisted of a single vertex and were removed")
+						streamVector = streamVector[-badrows, ]
+						sf::st_intersection(streamVector, crCatchment)
+					} else {
+						error(e)
+		}})
 
-		## clean up
-		gs <- GSClean(catchVname, gs, "vector")
-		gs <- GSClean(streamVector, gs, "vector")
-		gs <- GSClean(oname, gs, "vector")
+		
+		if(trim) {
+			ext_poly = sf::st_as_sf(methods::as(raster::extent(output), "SpatialPolygons"))
+			sf::st_crs(ext_poly) = sf::st_crs(output)
+			ext_poly = sf::st_transform(ext_poly, sf::st_crs(vout))
+			vout = sf::st_intersection(vout, ext_poly)
+		}
 
 		## return lines
-		output <- list(raster = output, vector = vout)
+		output <- list(raster = output, vector = methods::as(vout, "Spatial"))
 	}
 
 	return(output)

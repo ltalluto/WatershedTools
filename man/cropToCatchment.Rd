@@ -13,7 +13,7 @@ cropToCatchment(x, streamRaster, streamVector, drainage, gs, file,
 \item{streamRaster}{A RasterLayer stream delineation (required), or character giving the 
 name of a Grass object}
 
-\item{streamVector}{A SpatialLines stream delineation (optional), or character giving the 
+\item{streamVector}{A SpatialLines or sf stream delineation (optional), or character giving the 
 name of a Grass object}
 
 \item{drainage}{Raster or character, Drainage direction raster, from e.g., [accumulate()]. 
