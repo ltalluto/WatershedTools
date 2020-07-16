@@ -1,0 +1,7 @@
+citEntry(entry = "manual",
+  author = "Matthew V. Talluto",
+  title = "WatershedTools: An R pakcage for the spatial analysis of watersheds",
+  year = "2020",
+  url = "https://github.com/mtalluto/WatershedTools",
+  textVersion = paste0("Talluto, M. V. 2020. WatershedTools: An R package for the spatial analysis of watersheds. Version ", packageVersion("WatershedTools"), ". https://github.com/mtalluto/WatershedTools")
+)
