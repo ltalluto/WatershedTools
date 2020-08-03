@@ -4,8 +4,14 @@
 \alias{Watershed}
 \title{Creates a Watershed object}
 \usage{
-Watershed(stream, drainage, elevation, accumulation, catchmentArea,
-  otherLayers)
+Watershed(
+  stream,
+  drainage,
+  elevation,
+  accumulation,
+  catchmentArea,
+  otherLayers
+)
 }
 \arguments{
 \item{stream}{Stream network raster, required}

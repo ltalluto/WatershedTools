@@ -3,53 +3,107 @@
 #' ws_intersect handles the use case where we want to summarize areal features, such as land use, soils, etc, across
 #' reaches of a river, while taking into account drainage area, flow, etc.
 #' 
-#' There are three potential outputs, which will be identified in the output by the 'method' column
-#' * `riparian`: The layers in `areas` are summarized within a riparian buffer surrounding each reach; 
-#'  		provided if `rip_buffer` is not NA.
+#' There are three output types:
+#' * `riparian`: The layers in `areas` are summarized within a riparian buffer surrounding each reach
 #' * `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each focal reach and all
-#'          upstream reaches; provided if `rip_buffer` is not NA and `drainage` is not NA
-#' * `catchment`: The layers in `areas` are summarized within the entire catchment for each reach, provided if
-#'          `drainage` is not NA
+#'          upstream reaches
+#' * `catchment`: The layers in `areas` are summarized within the entire catchment for each reach
 #' 
 #' @param ws A Watershed
-#' @param areas A named list of areal features to summarize; should be polygon features from `sf` or `sp`
+#' @param areas A named list of areal features to summarize; either a [raster::stack()], or a list of
+#' [sp::SpatialPolygons()] layers, or a list of [sf::sf()] layers.
 #' @param area_id Character vector; the names of one or more columns in `areas` that should be summarised along
 #' the river feature; partial matching with regular expressions is allowed, but each item in `area_id` must identify 
-#' a single column in `areas` 
+#' a single column in `areas`. Not required if areas is a raster stack.
 #' @param rip_buffer The width of the riparian buffer
-#' @param drainage Optional drainage direction raster for calculating catchment; see 'details'
+#' @param drainage Drainage direction raster for calculating catchment
 #' @param ... Additional parameters to pass to [GrassSession()]
 #' @return A data.table summarising the polygons in each layer in areas along the river provided in x.
 #' @export
-ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...) {
-	if(!requireNamespace("fasterize", quietly=TRUE)) {
-		stop("The fasterize package is required for this function; \n",
-			 "see https://github.com/ecohealthalliance/fasterize for instructions")
+ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage, ...) {
+	if(!requireNamespace("fasterize", quietly = TRUE))
+		stop("package 'fasterize' is required for this functionality")
+	
+	riv_r = raster::raster(ws$data)
+	
+	if(methods::is(areas, "RasterStack")) {
+		if(!all(is.factor(areas))) {
+			for(i in 1:raster::nlayers(areas))
+				areas[[i]] = raster::ratify(areas[[i]])
+		}
+	} else if(methods::is(areas, "list")) {
+		areas = mapply(.process_area, x = areas, id = area_id, MoreArgs = list(ras = riv_r), SIMPLIFY=FALSE)
+		areas = raster::stack(areas)
+	} else {
+		areas = .process_area(areas, area_id, riv_r)
 	}
+
 	
-	areas = mapply(function(a, id) {
-		a$wst_category = factor(a[[id]])
-		a
-	}, areas, area_id, SIMPLIFY = FALSE)
-	area_tables = mapply(function (a, id) levels(a$wst_category), areas, area_id, SIMPLIFY = FALSE)
-	riv = raster::raster(ws$data, layer = which(names(ws$data) == "reachID"))
-	riv_buff = raster::buffer(riv, width=rip_buffer)
-	
-	areas = lapply(areas, fasterize::fasterize, raster = riv, field = "wst_category")
-	areas = raster::stack(areas)
+	riv = as.sf.Watershed(ws)
+	riv_buff = sf::st_sf(sf::st_union(sf::st_buffer(riv, rip_buffer)))
+	riv_buff_r = fasterize::fasterize(riv_buff, raster = riv_r)
 
 	dname = 'drainage'
 	gs = GrassSession(drainage, layerName = dname, override = TRUE, ...)
 	
 	res = lapply(unique(ws$data$reachID), .do_ws_intersect, y = areas, ws = ws, 
-				 width = rip_buffer, gs = gs, dname = dname, riv_buff = riv_buff)
+				 width = rip_buffer, gs = gs, dname = dname, riv_buff = riv_buff_r)
 	res = rbindlist(res)
 	res$category = ""
-	for(lyr in names(area_tables))
-		res$category[res$layer == lyr] = area_tables[[lyr]][res[layer == lyr, value]]
+	for(i in seq_len(raster::nlayers(areas))) {
+		tab = raster::levels(areas)[[i]]
+		if(missing(area_id)) {
+			id = 1
+		} else {
+			if(area_id[[i]] %in% colnames(tab)) {
+				id = which(colnames(tab) == area_id[[i]])
+			} else {
+				id = 1
+			}
+		}
+		lyr = names(areas)[i]
+		j = which(res[["layer"]] == lyr)
+		if(length(j) > 0) {
+			res[j, "category"] = tab[res[["value"]][j], id]
+		}
+	}
 	res$value = NULL
 	res
 }
+
+
+#' Take whatever format of areal layer, process into a raster for ws_intersect
+#' @param x The areal layer to process
+#' @param id The names of one or more columns in `x` that should be summarised along
+#' @param ras A raster layer template to create rasters from polygons
+.process_area = function(x, id, ras) {
+	if(methods::is(x, "SpatialPolygons")) {
+		x = sf::st_as_sf(x)
+	}
+	
+	if(methods::is(x, "sf")) {
+		warning("Vector input can produce inconsistent results; the preferred method is to
+				provide a classified rasterlayer")
+		fieldname = 'wst_category'
+		x[[fieldname]] = factor(x[[id]])
+		tab = levels(x[[fieldname]])
+		x = fasterize::fasterize(x, raster = ras, field = fieldname)
+		x = raster::ratify(x)
+		lev = raster::levels(x)[[1]]
+		lev[[id]] = tab[lev[,1]]
+		levels(x) = list(lev)
+	}
+	
+	if(!methods::is(x, "RasterLayer")) {
+		stop("Please provide a raster (preferred), sp, or sf polygon object")
+	}
+
+	if(!raster::is.factor(x)) {
+		x = raster::ratify(x)
+	}
+	return(x)
+}
+
 
 #' Helper function to perform the watershed intersection on a single reach
 #' @param x A reachID to operate on
@@ -60,8 +114,10 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage = NA, ...)
 #' @param dname Drainage layer in the grass session
 #' @param riv_buff A buffer layer for the entire river
 .do_ws_intersect = function(x, y, ws, width, gs, dname, riv_buff) {
-	reach = ws$data[ws$data$reachID == x,]
-	reach = sf::st_as_sf(reach)
+	i = which(ws$data$reachID == x)
+	reach = ws$data[i,]
+	adj = ws$adjacency[i,i,drop=FALSE]
+	reach = .reach_to_sf(reach, adj)
 	rb = sf::st_buffer(reach, width)
 	ras = raster::raster(ext=extent(as(rb, "Spatial")), res=raster::res(y))
 	rb = fasterize::fasterize(rb, ras)

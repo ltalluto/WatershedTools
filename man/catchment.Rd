@@ -4,8 +4,15 @@
 \alias{catchment}
 \title{Catchment deliniation}
 \usage{
-catchment(x, drainage, gs, areas, file = NULL, output = c("area",
-  "raster", "sf"), ...)
+catchment(
+  x,
+  drainage,
+  gs,
+  areas,
+  file = NULL,
+  output = c("area", "raster", "sf"),
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class [sp::SpatialPoints], [sf::sf], or a matrix of x-y coordinates}

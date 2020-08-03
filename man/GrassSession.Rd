@@ -4,9 +4,16 @@
 \alias{GrassSession}
 \title{Set up a GRASS session}
 \usage{
-GrassSession(layer, gisBase, layerName = NA, home = tempdir(),
-  gisDbase = home, location = "NSmetabolism", mapset = "PERMANENT",
-  override)
+GrassSession(
+  layer,
+  gisBase,
+  layerName = NA,
+  home = tempdir(),
+  gisDbase = home,
+  location = "NSmetabolism",
+  mapset = "PERMANENT",
+  override
+)
 }
 \arguments{
 \item{layer}{A [raster::raster] object (recommended); or any other object which has `extent()` and `proj4string()` methods defined.}

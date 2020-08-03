@@ -1,6 +1,6 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 1.4.1
+Version: 1.5.0
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -33,6 +33,6 @@ Suggests:
     fasterize
 SystemRequirements:
 	GRASS GIS 7.4
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 LinkingTo: 
     Rcpp

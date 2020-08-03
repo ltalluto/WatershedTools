@@ -16,8 +16,7 @@ head.Watershed(x, ...)
 
 \method{summary}{Watershed}(x, ...)
 
-plot.Watershed(x, variable, transform, size = 0.5, xlim, ylim,
-  viridis_col = "inferno")
+\method{plot}{Watershed}(x, variable, transform, size = 0.5, xlim, ylim, viridis_col = "inferno")
 }
 \arguments{
 \item{x}{A watershed object}

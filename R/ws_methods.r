@@ -1,3 +1,48 @@
+#' Convert a watershed to an sf LINESTRING collection
+#' 
+#' Currently the only attribute that is preserved is the reachID
+#' 
+#' @params x A Watershed
+#' @return An sf LINESTRING
+#' @export
+as.sf.Watershed = function(x) {
+	reaches = unique(x$data$reachID)
+	res = parallel::mclapply(reaches, function(r) {
+		i = which(x$data$reachID == r)
+		.reach_to_sf(x$data[i,], x$adjacency[i,i, drop=FALSE])
+	})
+	do.call(sf:::rbind.sf, res)
+}
+
+#' Produce an sf LINESTRING from a single reach
+#' @param x data portion of a watershed, containing only a single reach
+#' @param adj Adjacency matrix, just for the reach
+.reach_to_sf = function(x, adj) {
+	if(nrow(adj) == 1)
+		return(NULL)
+	ord = vector("integer", length=nrow(adj))
+	top = which(Matrix::rowSums(adj) == 0)
+	bottom = which(Matrix::colSums(adj) == 0)
+	visited = 0
+	current = top
+	while(current != bottom) {
+		visited = visited + 1
+		ord[current] = visited
+		current = which(adj[,current] != 0)
+		if(visited == nrow(adj)) {
+			stop("Toplogical error")
+		}
+	}
+	ord[bottom] = nrow(adj)
+	x = sf::st_as_sf(x)
+	x = x[order(ord),]
+	res = sf::st_combine(x)
+	res = sf::st_cast(res, "LINESTRING")
+	res = sf::st_sf(res)
+	res$reachID = x$reachID[1]
+	res
+}
+
 #' @name [.Watershed
 #' @aliases names.Watershed
 #' @aliases head.Watershed
