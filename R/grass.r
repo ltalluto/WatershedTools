@@ -1,129 +1,75 @@
 
-#' Produce a [sp::SpatialPixelsDataFrame] from a [raster::RasterLayer]
-#'
-#' @param x A [raster::RasterLayer] object
-#' @param complete.cases Boolean, if TRUE only complete (non-na) rows are returned
-#' @return A [sp::SpatialPixelsDataFrame]
-#' @keywords internal
-rasterToSPDF <- function(x, complete.cases=FALSE)
-{
-	coords <- sp::coordinates(x)
-	gr <- data.frame(cbind(coords, raster::values(x)))
-	if(complete.cases)
-		gr <- gr[complete.cases(gr),]
-	sp::coordinates(gr) <- c(1,2)
-	sp::proj4string(gr) <- sp::proj4string(x)
-	sp::gridded(gr) <- TRUE
-	return(gr)
-}
+
+ 
+# #' Set up a GRASS session
+# #' 
+# #' @param layer A [raster::raster] object (recommended); or any other object which has `extent()` and `proj4string()` methods defined.
+# #' @param gisBase character; the location of the GRASS installation (see `details`)
+# #' @param layerName NA or character; if NA (the default), the layer will not be added to the grass session, otherwise it will be appended with this name.
+# #' @param home Location to write GRASS settings, `details`.
+# #' @param gisDbase Location to write GRASS GIS datasets; see `details`.
+# #' @param location Grass location name
+# #' @param mapset Grass mapset name
+# #' @param override Logical;  see `details`
+# #' 
+# #' @details if `gisBase` is not provided, it can be automatically deduced in some cases.
+# #' On some systems, you can run `grass74 --config path` from the command line to get this path.
+# #' 
+# #' The extent, projection, and resolution of the grass session will be determined by `layer`.
+# #' 
+# #' by default `override` will be TRUE if home and gisDbase are set to their defaults, otherwise FALSE. If TRUE, the new session will override any existing grass session (possibly damaging/overwriting existing files). It is an error if override is FALSE and there is an already running session.
+# #' @return An S3 [GrassSession] object
+# #' @export
+# GrassSession <- function(layer, gisBase, layerName = NA, home = tempdir(), gisDbase = home,
+# 	location = 'NSmetabolism', mapset = 'PERMANENT', override)
+# {
+# 	if(missing(gisBase)) 
+# 		gisBase <- system2("grass74", args=c("--config path"), stdout=TRUE)
+# 
+# 	if(missing(override)) {
+# 		if(home == gisDbase  && home == tempdir()) {
+# 			override <- TRUE
+# 		} else override <- FALSE
+# 	}
+# 
+# 	gs <- list()
+# 	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location, 
+# 		mapset = mapset, override = override)
+# 	gs$gisBase <- gisBase
+# 	gs$home <- home
+# 	gs$gisDbase <- gisDbase
+# 	gs$location <- location
+# 	gs$mapset <- mapset
+# 
+# 	err <- rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), intern=TRUE)
+# 	gs$proj4string <- sp::proj4string(layer)
+# 
+# 	ext <- as.character(as.vector(raster::extent(layer)))
+# 	rasres <- as.character(raster::res(layer))
+# 	rgrass7::execGRASS("g.region", n = ext[4], s = ext[3], e = ext[2], w = ext[1], 
+# 			rows=raster::nrow(layer), cols=raster::ncol(layer), nsres = rasres[2], 
+# 			ewres = rasres[1])
+# 	gs$extent <- raster::extent(layer)
+# 	gs$resolution <- raster::res(layer)
+# 
+# 	class(gs) <- c("GrassSession", class(gs))
+# 
+# 	if(!is.na(layerName)) gs <- GSAddRaster(layer, layerName, gs)
+# 
+# 	return(gs)
+# }
+
+# #' Print method for a [GrassSession] object
+# #'
+# #' @param x A [GrassSession] object
+# #'
+# #' @export
+# print.GrassSession <- function(x)
+# {
+# 	print(rgrass7::gmeta())
+# }
 
 
-#' Set up a GRASS session
-#'
-#' @param layer A [raster::raster] object (recommended); or any other object which has `extent()` and `proj4string()` methods defined.
-#' @param gisBase character; the location of the GRASS installation (see `details`)
-#' @param layerName NA or character; if NA (the default), the layer will not be added to the grass session, otherwise it will be appended with this name.
-#' @param home Location to write GRASS settings, `details`.
-#' @param gisDbase Location to write GRASS GIS datasets; see `details`.
-#' @param location Grass location name
-#' @param mapset Grass mapset name
-#' @param override Logical;  see `details`
-#'
-#' @details if `gisBase` is not provided, it can be automatically deduced in some cases.
-#' On some systems, you can run `grass74 --config path` from the command line to get this path.
-#' 
-#' The extent, projection, and resolution of the grass session will be determined by `layer`.
-#' 
-#' by default `override` will be TRUE if home and gisDbase are set to their defaults, otherwise FALSE. If TRUE, the new session will override any existing grass session (possibly damaging/overwriting existing files). It is an error if override is FALSE and there is an already running session.
-#' @return An S3 [GrassSession] object
-#' @export
-GrassSession <- function(layer, gisBase, layerName = NA, home = tempdir(), gisDbase = home,
-	location = 'NSmetabolism', mapset = 'PERMANENT', override)
-{
-	if(missing(gisBase)) 
-		gisBase <- system2("grass74", args=c("--config path"), stdout=TRUE)
-
-	if(missing(override)) {
-		if(home == gisDbase  && home == tempdir()) {
-			override <- TRUE
-		} else override <- FALSE
-	}
-
-	gs <- list()
-	rgrass7::initGRASS(gisBase, home=home, gisDbase = gisDbase, location = location, 
-		mapset = mapset, override = override)
-	gs$gisBase <- gisBase
-	gs$home <- home
-	gs$gisDbase <- gisDbase
-	gs$location <- location
-	gs$mapset <- mapset
-
-	err <- rgrass7::execGRASS("g.proj", flags = "c", proj4 = sp::proj4string(layer), intern=TRUE)
-	gs$proj4string <- sp::proj4string(layer)
-
-	ext <- as.character(as.vector(raster::extent(layer)))
-	rasres <- as.character(raster::res(layer))
-	rgrass7::execGRASS("g.region", n = ext[4], s = ext[3], e = ext[2], w = ext[1], 
-			rows=raster::nrow(layer), cols=raster::ncol(layer), nsres = rasres[2], 
-			ewres = rasres[1])
-	gs$extent <- raster::extent(layer)
-	gs$resolution <- raster::res(layer)
-
-	class(gs) <- c("GrassSession", class(gs))
-
-	if(!is.na(layerName)) gs <- GSAddRaster(layer, layerName, gs)
-
-	return(gs)
-}
-
-#' Print method for a [GrassSession] object
-#'
-#' @param x A [GrassSession] object
-#'
-#' @export
-print.GrassSession <- function(x)
-{
-	print(rgrass7::gmeta())
-}
-
-#' Add a RasterLayer to a grass session and return the modified session
-#' @param x A [raster::raster] object or a [sp::SpatialGridDataFrame]
-#' @param gs A [GrassSession] object
-#' @param layerName character; the name of the layer to add to grass.
-#' 
-#' @return An S3 [GrassSession] object
-#' @export
-GSAddRaster <- function(x, layerName, gs, overwrite = TRUE)
-{
-
-	if("RasterLayer" %in% class(x)) {
-		x <- rasterToSPDF(x)
-	}
-	flags <- NULL
-	if(overwrite)
-		flags <- c(flags, "overwrite")
-	rgrass7::writeRAST(x, layerName, flags = flags)
-	GSAppendRasterName(layerName, gs)
-}
-
-#' Add a RasterLayer *name* to a grass session and return the modified session
-#' @param x Character; the name of the layer(s) to add
-#' @param gs A [GrassSession] object
-#' 
-#' @return An S3 [GrassSession] object
-#' @keywords internal
-#' @export
-GSAppendRasterName <- function(x, gs) {
-	# make sure file exists
-	for(layer in x) {
-		lnames <- rgrass7::execGRASS("g.list", flags = "quiet", type='raster', mapset = gs$mapset, 
-			pattern = layer, intern=TRUE)
-		if(length(lnames) == 0)
-			stop("tried to add ", x, " to grass list of layers, but no layer exists")
-		gs$layers <- c(gs$layers, layer)
-	}
-	return(gs)
-}
 
 #' Read a raster from a grass session
 #' @param layer The name of the layer(s) to read
