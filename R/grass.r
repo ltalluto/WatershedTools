@@ -71,27 +71,6 @@
 
 
 
-#' Read a raster from a grass session
-#' @param layer The name of the layer(s) to read
-#' @param gs A [GrassSession] object
-#' @param file (optional, recommended) Where to store the raster on disk
-#' @details If no file is specified, the raster will be stored in memory or as a temporary
-#'   file and will be lost at the end of the R sessionl.
-#' @return A raster or raster stack
-#' @export
-GSGetRaster <- function(layer, gs, file)
-{
-	ras <- sapply(layer, function(x) raster::raster(rgrass7::readRAST(x)))
-	if(length(layer) != 1) {
-		ras <- raster::stack(ras)
-	} else {
-		ras <- ras[[1]]
-	}
-	if(!missing(file) && is.character(file)) 
-		ras <- raster::writeRaster(ras, file)
-	ras
-}
-
 
 #' Convert a raster to a polygon in grass
 #' @param rast Either a rasterlayer or a file name of a raster in grass
@@ -121,18 +100,3 @@ GSRastToPoly <- function(rast, vect, gs) {
 }
 
 
-#' Delete layers from a GrassSession
-#' @param layer Layer name to delete
-#' @param gs GrassSession to operate on
-#' @param type Type of layer, either raster of vector
-#' @return Modified grass session
-#' @keywords internal
-GSClean <- function(layer, gs, type = c('raster', 'vector')) {
-	type <- match.arg(type)
-	rgrass7::execGRASS("g.remove", flags = c("f", "quiet"), type=type, name=layer)
-	if(type == 'raster') {
-		i <- grep(layer, gs$layers)
-		if(length(i) == 1) gs$layers <- gs$layers[-i]
-	}
-	return(gs)
-}
