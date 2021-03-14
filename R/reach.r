@@ -200,19 +200,7 @@ renumberReaches <- function(rIDs) {
 }
 
 
-#' Produce a reach by reach adjacency matrix
-#' @keywords internal
-.create_reach_adjacency = function(ws) {
-	if(max(ws$data$reachID) != length(unique(ws$data$reachID)))
-		stop("ReachIDs not in 1:length(unique(reachID)); they must be renumbered")
-	
-	reaches = sort(unique(ws$data$reachID))
-	adjMat = parallel::mclapply(reaches, function(r) reachAdj(ws, r))
-	adjMat = do.call(rbind, adjMat)
-	adjspMat = Matrix::sparseMatrix(adjMat[,1], adjMat[,2], dims=rep(max(ws$data$reachID), 2),
-									 dimnames = list(reaches, reaches))
-	adjspMat
-}
+
 
 #' Find all reaches directly upstream from a given reach
 #' @keywords internal
