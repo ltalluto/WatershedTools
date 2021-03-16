@@ -3,11 +3,7 @@ library("WatershedTools")
 
 gisBase <- getGISBase()
 
-test_that("Fill DEM (raster object)", {
-	skip_on_cran()
-	testDEM <<- raster::raster(system.file("testdata/testDEM.grd", package="WatershedTools"))
-	expect_error(filled <<- fillDEM(testDEM, gisBase = gisBase), regex=NA)
-})
+
 
 test_that("Flow accumulation (rasters)", {
 	skip_on_cran()

@@ -39,9 +39,6 @@ ws_slope = function(ws, by = c("reach", "pixel")) {
 	return(slope)
 }
 
-
-
-
 #' Nearest neighbors of pixels
 #' @keywords internal
 ds = function(pix, ws) {
