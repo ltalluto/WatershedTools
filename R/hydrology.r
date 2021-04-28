@@ -255,7 +255,9 @@ q_from_flow <- function(depth, velocity, flowID = rep(1, length(depth)), width,
 
 	## need to divide width by the number of measurements
 	n <- tapply(flow$id, flow$id, length)
-	n <- data.table(id =as.integer(names(n)), n = n, key = 'id')
+	n <- data.table(id =names(n), n = as.vector(n), key = 'id')
+	if(is.numeric(flowID))
+		n$id = as.integer(n$id)
 
 	widthByID <- n[widthByID]
 
