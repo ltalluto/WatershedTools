@@ -40,23 +40,24 @@ ws_slope = function(ws, by = c("reach", "pixel")) {
 }
 
 
-#' Compute an adjacency buffer for an adjacency matrix
-#' 
-#' For a weighted sparse adjacency matrix, this function returns another weighted matrix.
-#' A nonzero element in i,j indicates that j is the node 
-#' 
-#' @param adj
+
 
 #' Nearest neighbors of pixels
 #' @keywords internal
 ds = function(pix, ws) {
-	which(ws$adjacency[,pix] == 1)
+	val = which(ws$adjacency[,pix] == 1)
+	if(length(val) == 0)
+		val = NA
+	val
 }
 
 #' Nearest neighbors of pixels
 #' @keywords internal
 us = function(pix, ws) {
-	which(ws$adjacency[pix,] == 1)
+	val = which(ws$adjacency[pix,] == 1)
+	if(length(val) == 0)
+		val = NA
+	val
 }
 
 

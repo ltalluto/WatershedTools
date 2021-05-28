@@ -2,15 +2,11 @@
 % Please edit documentation in R/topology.r
 \name{ds}
 \alias{ds}
-\title{Compute an adjacency buffer for an adjacency matrix}
+\title{Nearest neighbors of pixels}
 \usage{
 ds(pix, ws)
 }
-\arguments{
-\item{adj}{Nearest neighbors of pixels}
-}
 \description{
-For a weighted sparse adjacency matrix, this function returns another weighted matrix.
-A nonzero element in i,j indicates that j is the node
+Nearest neighbors of pixels
 }
 \keyword{internal}
