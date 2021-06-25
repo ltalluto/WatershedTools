@@ -1,3 +1,146 @@
+#' Compute zonal statistics on a watershed
+#' 
+#' Compute zonal statistics, where the zones are determined by watershed reaches. 
+#' 
+#' There are three output types:
+#' * `riparian`: The layers in `areas` are summarized within a riparian buffer surrounding each 
+#' reach
+#' * `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each 
+#' focal reach and all upstream reaches
+#' * `catchment`: The layers in `areas` are summarized within the entire catchment for each reach
+#' @param ws A Watershed]
+#' @param ras A raster
+#' @param statistics A list of function names; each function must accept a vector and return
+#' 	a single value, and must have an na.rm argument
+#' @param rip_buffer The width of the riparian buffer
+#' @param drainage Drainage direction raster for calculating catchment
+#' @param mc.cores Number of cores for parallel processing
+#' @param catch_dir Where to store reach catchments
+#' @param ... Additional parameters to pass to [GrassSession()]
+#' @return A data.table summarising the values in each layer in areas along the river provided in x.
+#' @export
+ws_zonal = function(ws, ras, statistics = list("mean", "sd"), rip_buffer = 50, drainage, 
+			mc.cores = parallel::detectCores(), catch_dir = tempdir(), ...) {
+	if(!is(ras, "RasterLayer"))
+		stop("Zonal works with a single RasterLayer")
+
+	riv_buff_r = .ws_buffer(ws, rip_buffer)
+
+	dname = 'drainage'
+	gs = GrassSession(drainage, layerName = dname, override = TRUE, ...)
+
+	rids = unique(ws$data$reachID)
+
+	## slow step; compute the catchment for each reach
+	## use a for loop so we can show progress
+	catchments = list()
+	pts = outlets(ws, rids, output = "Spatial")
+	cat("Computing catchments, this may take a while\n")
+	for(i in seq_along(rids)) {
+		r = pts[i,]
+		rn = rids[i]
+		catchments[i] = catchment(r, dname, gs, 
+			file = file.path(catch_dir, paste0("c_", rn, ".grd")) , output = "raster")
+		cat("   ...", i, "/", length(rids), "(", floor(i/length(rids)*100), "%)...\r")
+	}
+
+	res = parallel::mclapply(rids, .do_ws_zonal, ws = ws, ras = ras, width = rip_buffer, gs = gs,
+		drainage = dname, riv_buff = riv_buff_r, stats = statistics, mc.cores = mc.cores)
+	res = lapply(res, function(x) {
+		colnames(x) = statistics
+		reshape2::melt(x)})
+	res = lapply(res, data.table::as.data.table)
+	names(res) = rids
+	res = data.table::rbindlist(res, idcol = "reachID")
+	colnames(res)[2:3] = c("zone", "statistic")
+	res
+}
+
+
+#' Compute a zones for a single reach
+#' 
+#' @param ws A Watershed
+#' @param rid A reachID
+#' @param drainage Drainage direction raster, or name of raster from gs
+#' @param gs A GrassSession()
+#' @param width The width of the riparian buffer
+#' @param riv_buff Buffer for the entire river
+#' @return list of 3 rasters; the buffer for the reach, the catchment for the reach
+#' intersected with the buffer for the whole river, and the catchment for the reach
+#' @keywords internal
+.reach_zone = function(ws, rid, drainage, gs, width, riv_buff) {
+	pt = outlets(ws, rid, output = "Spatial")
+	catch = catchment(pt, drainage, gs, output = "raster")
+	rb = .ws_buffer(ws, width, rid)
+	res = list(catchment = catch, reach_buffer = rb, 
+		catchment_buffer = catch * riv_buff)
+}
+
+
+#' Compute zonal stats for a single reach
+#' 
+#' @param rid A reachID
+#' @param ws A Watershed
+#' @param ras The raster to compute zonal stats on
+#' @param width The width of the riparian buffer
+#' @param drainage Drainage direction raster, or name of raster from gs
+#' @param gs A GrassSession()
+#' @param riv_buff Buffer for the entire river
+#' @param stats A list of statistics function names
+.do_ws_zonal = function(rid, ws, ras, width, drainage, gs, riv_buff, stats) {
+	tryCatch({
+		zones = .reach_zone(ws, rid, drainage, gs, width, riv_buff)
+		isect = lapply(zones, function(x) {
+			if(!raster::compareRaster(x, ras, extent = FALSE, stopiffalse = FALSE))
+				x = raster::resample(x, ras)
+			x * ras})
+		isect = raster::stack(isect)
+		isect = raster::values(isect)
+		isect = isect[rowSums(is.finite(isect)) > 0,]
+		r = sapply(stats, function(x) apply(isect, 2, function(y) get(x)(y, na.rm = TRUE)))
+		cat(rid, "done\n")
+		r
+	}, error = function(e) {
+		msg = paste("rid", rid, "-", as.character(e))
+		cat(msg, "\n")
+		NA
+	})
+}
+
+
+#' Compute a riparian buffer around a Watershed or a reach
+#' @param ws A Watershed
+#' @param buff The buffer width
+#' @param rid A reach id, if not missing, the buffer will only include this reach
+#' @return A raster
+#' @keywords internal
+.ws_buffer = function(ws, buff, rid) {
+	if(!requireNamespace("fasterize", quietly = TRUE))
+		stop("package 'fasterize' is required for this functionality")
+
+	riv_r = raster::raster(ws$data)
+	if(missing(rid)) {
+		riv = as.sf.Watershed(ws)
+		riv_buff = sf::st_sf(sf::st_union(sf::st_buffer(riv, buff)))
+		res = fasterize::fasterize(riv_buff, raster = riv_r)
+	} else {
+		i = which(ws$data$reachID == rid)
+		reach = ws$data[i,]
+		## if the reach is only a single point, buffer the point instead
+		# otherwise convert to linestring
+		if(nrow(reach) > 1) {
+			adj = ws$adjacency[i,i,drop=FALSE]
+			reach = .reach_to_sf(reach, adj)
+		} else {
+			reach = sf::st_as_sf(reach)
+		}
+		rb = sf::st_buffer(reach, buff)
+		ras = raster::raster(ext=extent(as(rb, "Spatial")), res=raster::res(riv_r))
+		res = fasterize::fasterize(rb, ras)
+	}
+	res
+}
+
 #' Intersect a river feature with a polygon feature
 #' 
 #' ws_intersect handles the use case where we want to summarize areal features, such as land use, soils, etc, across
@@ -20,10 +163,7 @@
 #' @param ... Additional parameters to pass to [GrassSession()]
 #' @return A data.table summarising the polygons in each layer in areas along the river provided in x.
 #' @export
-ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage, ...) {
-	if(!requireNamespace("fasterize", quietly = TRUE))
-		stop("package 'fasterize' is required for this functionality")
-	
+ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage, ...) {	
 	riv_r = raster::raster(ws$data)
 	
 	if(methods::is(areas, "RasterStack")) {
@@ -39,9 +179,7 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage, ...) {
 	}
 
 	
-	riv = as.sf.Watershed(ws)
-	riv_buff = sf::st_sf(sf::st_union(sf::st_buffer(riv, rip_buffer)))
-	riv_buff_r = fasterize::fasterize(riv_buff, raster = riv_r)
+	riv_buff_r = .ws_buffer(ws, rip_buffer)
 
 	dname = 'drainage'
 	gs = GrassSession(drainage, layerName = dname, override = TRUE, ...)
@@ -114,13 +252,10 @@ ws_intersect = function(ws, areas, area_id, rip_buffer = 50, drainage, ...) {
 #' @param dname Drainage layer in the grass session
 #' @param riv_buff A buffer layer for the entire river
 .do_ws_intersect = function(x, y, ws, width, gs, dname, riv_buff) {
-	i = which(ws$data$reachID == x)
-	reach = ws$data[i,]
-	adj = ws$adjacency[i,i,drop=FALSE]
-	reach = .reach_to_sf(reach, adj)
-	rb = sf::st_buffer(reach, width)
-	ras = raster::raster(ext=extent(as(rb, "Spatial")), res=raster::res(y))
-	rb = fasterize::fasterize(rb, ras)
+
+
+	rb = .ws_buffer(ws, width, x)
+
 	yy = raster::crop(y, rb)
 	rb = raster::resample(rb, yy)
 	riparian = rb * yy
