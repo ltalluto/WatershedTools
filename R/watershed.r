@@ -205,7 +205,7 @@ headwaters <- function(ws) {
 #' Get data from all outlets of a watershed
 #' 
 #' @param ws Watershed object
-#' @param rid vector of reach IDs, if NA returns outlet for entire network
+#' @param rid vector of reach IDs, if missing returns outlet for entire network
 #' @param output Output type to return
 #' @return a `data.frame` or a `SpatialPixelsDataFrame` containing data for all outlets 
 #' @export

@@ -1,6 +1,6 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 1.5.3
+Version: 1.5.3.9000
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -21,18 +21,17 @@ Imports:
     Rcpp,
     ggplot2,
     reshape2,
-    data.table,
-    sf (>= 0.9)
+    sf (>= 0.9),
 Suggests: 
+    watershed (>= 0.3.5),
     testthat (>= 2.1.0),
     maptools,
     rgeos,
     rstanarm,
     viridisLite,
-    RColorBrewer,
-    fasterize
+    RColorBrewer
 SystemRequirements:
 	GRASS GIS 7.4
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 LinkingTo: 
     Rcpp

@@ -87,7 +87,7 @@ wsDistance <- function(ws, x, variable = 'length') {
 		dsMat <- cbind(row=rep(xx, nrow(ds)), col = ds[,1], val = ds[,2])
 		usMat <- cbind(row=rep(xx, nrow(us)), col = us[,1], val = us[,2])
 		rbind(dsMat, usMat)
-	}, xx = x, ds = downs, us = ups))
+	}, xx = x, ds = downs, us = ups, SIMPLIFY = FALSE))
 	matWide <- reshape2::acast(matTall, row ~ col, value.var = 'val', 
 		fun.aggregate = function(x) ifelse(length(x) == 0, NA, x[1]), fill=NA_real_, drop=FALSE)
 
