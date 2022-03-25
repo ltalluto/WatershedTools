@@ -9,6 +9,7 @@
 #'  respective point.
 #' @param file The file name of the raster to be returned if `output='raster'`, see `details`.
 #' @param output One of 'area', 'raster', 'sf' determining the output format
+#' @param overwrite If writing a raster to a file, should it be overwritten?
 #' @param ... Additional parameters to pass to [GrassSession()]
 #' @details This is a wrapper for [r.water.outlet](https://grass.osgeo.org/grass74/manuals/r.water.outlet.html)
 #' 
@@ -30,7 +31,8 @@
 #'  * 'raster': a [rasterLayer][raster::raster()] (either a single raster or a stack, if length(x) > 1)
 #'  * 'sf': a polygon layer of class 'sf'
 #' @export
-catchment <- function(x, drainage, gs, areas, file = NULL, output = c('area', 'raster', 'sf'), ...)
+catchment <- function(x, drainage, gs, areas, file = NULL, output = c('area', 'raster', 'sf'), 
+		overwrite = FALSE, ...)
 {
 	output = match.arg(output)
 	if(!missing(areas)) {
@@ -89,8 +91,11 @@ catchment <- function(x, drainage, gs, areas, file = NULL, output = c('area', 'r
 		} else {
 			result = result[[1]]
 		}
+		result = raster::trim(result)
+		result = as.integer(result)
 		if(!missing(file))
-			result = writeRaster(result, file)
+			result = writeRaster(result, file, overwrite = overwrite, 
+				datatype="INT2U", options="COMPRESS=LZW")
 	} else if(output == 'sf') {
 		result = result[[1]]
 	}
