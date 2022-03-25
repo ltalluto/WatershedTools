@@ -57,7 +57,6 @@ us = function(pix, ws) {
 	val
 }
 
-
 #' Produces a site by pixel distance matrix
 #'
 #' Note that pixels in the watershed that are not connected to any of the sites will be excluded
