@@ -4,35 +4,17 @@
 \alias{ws_intersect}
 \title{Intersect a river feature with a polygon feature}
 \usage{
-ws_intersect(ws, areas, area_id, rip_buffer = 50, drainage, ...)
+ws_intersect(ws, ...)
 }
 \arguments{
 \item{ws}{A Watershed}
 
-\item{areas}{A named list of areal features to summarize; either a [raster::stack()], or a list of
-[sp::SpatialPolygons()] layers, or a list of [sf::sf()] layers.}
-
-\item{area_id}{Character vector; the names of one or more columns in `areas` that should be summarised along
-the river feature; partial matching with regular expressions is allowed, but each item in `area_id` must identify 
-a single column in `areas`. Not required if areas is a raster stack.}
-
-\item{rip_buffer}{The width of the riparian buffer}
-
-\item{drainage}{Drainage direction raster for calculating catchment}
-
-\item{...}{Additional parameters to pass to [GrassSession()]}
+\item{...}{Additional parameters for [watershed::w_intersect()]}
 }
 \value{
 A data.table summarising the polygons in each layer in areas along the river provided in x.
 }
 \description{
-ws_intersect handles the use case where we want to summarize areal features, such as land use, soils, etc, across
-reaches of a river, while taking into account drainage area, flow, etc.
-}
-\details{
-There are three output types:
-* `riparian`: The layers in `areas` are summarized within a riparian buffer surrounding each reach
-* `riparian_upstream`: The layers in `areas` are summarized within a riparian buffer for each focal reach and all
-         upstream reaches
-* `catchment`: The layers in `areas` are summarized within the entire catchment for each reach
+`Watershed`-friendly wrapper to [watershed::w_intersect()], see the help file in the 
+`watershed` package for details on the function.
 }

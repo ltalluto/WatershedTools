@@ -9,7 +9,7 @@ outlets(ws, rid, output = c("data.frame", "Spatial"))
 \arguments{
 \item{ws}{Watershed object}
 
-\item{rid}{vector of reach IDs, if NA returns outlet for entire network}
+\item{rid}{vector of reach IDs, if missing returns outlet for entire network}
 
 \item{output}{Output type to return}
 }

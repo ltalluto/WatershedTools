@@ -6,6 +6,9 @@
 \usage{
 as.sf.Watershed(x)
 }
+\arguments{
+\item{x}{A Watershed}
+}
 \value{
 An sf LINESTRING
 }

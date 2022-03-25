@@ -2,7 +2,7 @@
 #' 
 #' Currently the only attribute that is preserved is the reachID
 #' 
-#' @params x A Watershed
+#' @param x A Watershed
 #' @return An sf LINESTRING
 #' @export
 as.sf.Watershed = function(x) {
