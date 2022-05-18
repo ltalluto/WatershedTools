@@ -32,7 +32,8 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	maskIndices <- which(!is.na(raster::values(stream)))
 	allRasters$id[maskIndices] <- 1:length(maskIndices)
 
-	allSPDF <- rasterToSPDF(allRasters, complete.cases = TRUE)
+	allSPDF <- as(allRasters, "SpatialGridDataFrame")
+	allSPDF = allSPDF[complete.cases(allSPDF),]
 	if(!raster::compareRaster(allRasters, drainage, stopiffalse = FALSE))
 		drainage <- raster::crop(drainage, allRasters)
 	adjacency <- WSConnectivity(drainage, allRasters$id)
@@ -47,6 +48,7 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	attr(wsobj, "version") <- packageVersion("WatershedTools")
 	return(wsobj)
 }
+
 
 
 # #' Compute connectivity matrix

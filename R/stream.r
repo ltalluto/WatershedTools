@@ -99,6 +99,7 @@ doStrahler <- function(ws, x, streamOrder) {
 #' if parallel package is installed
 #' @details Computes Strahler stream order
 #' @return a vector, with one element per pixel in the watershed.
+#' @export
 strahler <- function(ws, parallel = TRUE) {
 	if(parallel && requireNamespace("parallel")) {
 		FUN <- parallel::mclapply
