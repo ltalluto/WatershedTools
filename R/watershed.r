@@ -163,7 +163,7 @@ outlets <- function(ws, rid, output = c("data.frame", "Spatial")) {
 #' @return A vector of pixel IDs
 #' @export
 downstreamPixelIds <- function(ws) {
-	mat <- Matrix::which(ws$adjacency == 1, arr.ind = TRUE)
+	mat <- Matrix::which(ws$adjacency != 0, arr.ind = TRUE)
 	endpt <- Matrix::which(Matrix::colSums(ws$adjacency) == 0)
 	mat <- rbind(mat, c(NA, endpt))
 	# rearrange so the UPSTREAM pixels (second column) indicate the row number
