@@ -10,38 +10,36 @@
 #' @return A watershed object
 #' @export
 Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, otherLayers) {
-	## drainage will be added later, after it is fixed by WSConnectivity
-	dataRasters <- list()
-	if(!missing(elevation)) dataRasters$elevation <- elevation
-	if(!missing(accumulation)) dataRasters$accumulation <- accumulation
-	if(!missing(catchmentArea)) dataRasters$catchmentArea <- catchmentArea
-	if(!missing(otherLayers)) dataRasters$otherLayers <- otherLayers
-	layerStack <- lapply(dataRasters, function(x) {
+	dataRasters =list()
+	if(!missing(drainage)) dataRasters$drainage = drainage
+	if(!missing(elevation)) dataRasters$elevation = elevation
+	if(!missing(accumulation)) dataRasters$accumulation = accumulation
+	if(!missing(catchmentArea)) dataRasters$catchmentArea = catchmentArea
+	if(!missing(otherLayers)) dataRasters$otherLayers = otherLayers
+	layerStack =lapply(dataRasters, function(x) {
 		if(!raster::compareRaster(stream, x, stopiffalse = FALSE))
-			x <- raster::crop(x, stream)
+			x =raster::crop(x, stream)
 		raster::mask(x, stream)
 	})
 
 	## create pixel IDs and add other layers, if present
-	allRasters <- raster::stack(stream, stream)
-	names(allRasters) <- c('reachID', 'id')
+	allRasters = raster::stack(stream, stream)
+	names(allRasters) = c('reachID', 'id')
 	if(length(layerStack) > 0) {
-		layerStack <- raster::stack(layerStack)
-		allRasters <- raster::addLayer(allRasters, layerStack)
+		layerStack = raster::stack(layerStack)
+		allRasters = raster::addLayer(allRasters, layerStack)
 	}
-	maskIndices <- which(!is.na(raster::values(stream)))
-	allRasters$id[maskIndices] <- 1:length(maskIndices)
+	maskIndices = which(!is.na(raster::values(stream)))
+	allRasters$id[maskIndices] = 1:length(maskIndices)
 
-	allSPDF <- as(allRasters, "SpatialGridDataFrame")
-	allSPDF = allSPDF[complete.cases(allSPDF),]
-	if(!raster::compareRaster(allRasters, drainage, stopiffalse = FALSE))
-		drainage <- raster::crop(drainage, allRasters)
-	adjacency <- WSConnectivity(drainage, allRasters$id)
-	allSPDF <- sp::merge(allSPDF, adjacency$drainage, by = 'id', all.x = TRUE)
-	allSPDF$length <- WSComputeLength(allSPDF$drainage, raster::res(drainage))
+	allSPDF = as(allRasters, "SpatialPixelsDataFrame")
+	allSPDF = allSPDF[complete.cases(allSPDF@data),]
+	adjacency = Matrix::t(watershed::pixel_topology(drainage = allRasters$drainage, 
+		stream = allRasters$reachID, id = allRasters$id))
+	allSPDF$length = WSComputeLength(allSPDF$drainage, raster::res(drainage))
 	allSPDF$vReachNumber <- allSPDF$reachID
 
-	wsobj <- list(data = allSPDF, adjacency = adjacency$adjacency)
+	wsobj <- list(data = allSPDF, adjacency = adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
 	
 	wsobj = .rebuild_reach_topology(wsobj)
