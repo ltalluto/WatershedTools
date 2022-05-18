@@ -42,7 +42,12 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	wsobj <- list(data = allSPDF, adjacency = adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
 	
-	wsobj = .rebuild_reach_topology(wsobj)
+	radj_x = raster::stack(allRasters$accumulation, allRasters$drainage, allRasters$reachID, 
+		allRasters$catchmentArea, allRasters$id)
+	names(radj_x) = c("accum", "drainage", "stream", "catchment", "id")
+	wsobj$reach_adjacency = Matrix::t(watershed::reach_topology(radj_x, Matrix::t(adjacency)))
+	wsobj$reach_connectivity = .create_reach_connectivity(wsobj, self = FALSE)
+		
 	attr(wsobj, "version") <- packageVersion("WatershedTools")
 	return(wsobj)
 }

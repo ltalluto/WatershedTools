@@ -34,18 +34,6 @@ trim_reaches = function(ws, size, rebuild = TRUE) {
 
 
 
-#' Reconstruct the reach topology
-#' 
-#' After editing a watershed's pixels or reaches, the reach topology will need to be rebuilt using this function.
-#' @param ws A watershed
-#' @return A modified watershed
-#' @keywords internal
-.rebuild_reach_topology = function(ws) {
-	ws = .renumber_reaches(ws)
-	ws$reach_adjacency = .create_reach_adjacency(ws)
-	ws$reach_connectivity = .create_reach_connectivity(ws, self = FALSE)
-	ws
-}
 
 #' Resize a single reach
 #' @details reach numbers will start from 1
