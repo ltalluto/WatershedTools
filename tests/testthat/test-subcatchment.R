@@ -1,5 +1,3 @@
-context("Subcatchment")
-library("WatershedTools")
 
 ws <- readRDS(system.file("testdata/testWS.rds", package="WatershedTools"))
 x <- confluences(ws)[1,'id']

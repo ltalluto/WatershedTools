@@ -28,51 +28,36 @@ trim_reaches = function(ws, size, rebuild = TRUE) {
 		pix_ids = find_short_reaches(ws, size)
 	}
 	if(rebuild && changed)
-		ws = .rebuild_reach_topology(ws)
+		ws = .rebuild_reaches(ws)
 	return(ws)
 }
 
 
 
 
-#' Resize a single reach
-#' @details reach numbers will start from 1
-#' @param adj subsetted adjacency matrix from a watershed, with just the entries for a single reach
-#' @param len length of each pixel
-#' @param start The reach number to start with
-#' @param size Reach size; the desired reach size, see 'details'
-#' @param min_size Minimum reach size
-.resize_reach = function(adj, len, size, min_size, start = 1) {
-	if(sum(len) <= size) {
-		rnums = rep(start, nrow(adj))
-	} else {
-		rnums = rep(0, nrow(adj))
-	}
-	c_reach = which(Matrix::rowSums(adj) == 0)
-	while(any(rnums == 0)) {
-		while(sum(len[c_reach]) < size) {
-			nxt = which(adj[,c_reach[length(c_reach)]] == 1)
-			c_reach = c(c_reach, nxt)
-		}
-		rnums[c_reach] = start
-		ind = which(rnums == 0)
-		if(length(ind) > 0) {
-			if(sum(len[ind]) < min_size) {
-				rnums[ind] = start
-			} else if(sum(len[ind]) < size) {
-				rnums[ind] = start + 1
-			} else {
-				start = start + 1
-				c_reach = which(adj[,c_reach[length(c_reach)]] == 1)
-			}
-		}
+
+
+
+#' Prepare watershed by setting up proper reach structures
+#' @param x A watershed
+#' @return A modified watershed with reaches properly set
+#' @keywords internal
+.rebuild_reaches = function(x) {
+	# renumber all reaches
+	old_reach_ids = unique(x$data$reachID)
+	index_reach_ids = 1:max(old_reach_ids)
+	if(!(all(index_reach_ids %in% old_reach_ids) && all(old_reach_ids %in% index_reach_ids))) {
+		new_ids = rank(old_reach_ids)
+		x$data$reachID = match(x$data$reachID, old_reach_ids)		
 	}
 
-	return(rnums)
+	# make the topology & connectivity matrices
+	ws_st = .make_ws_stack(x)
+	x$reach_adjacency = Matrix::t(watershed::reach_topology(ws_st, Matrix::t(x$adjacency)))
+	x$reach_connectivity = .create_reach_connectivity(x, self = FALSE)
+
+	x
 }
-
-
-
 
 
 #' Produce a reach by reach connectivity matrix
@@ -82,13 +67,13 @@ trim_reaches = function(ws, size, rebuild = TRUE) {
 #' Nonzero values indicate that a reachID in a row is downstream from that column
 #' @return A [Matrix::sparseMatrix()]
 #' @keywords internal
-.create_reach_connectivity <- function(ws, self = TRUE) {
-	adj <- ws$reach_adjacency
+.create_reach_connectivity = function(ws, self = TRUE) {
+	adj = ws$reach_adjacency
 	if(self)
-		diag(adj) <- 1
+		diag(adj) = 1
 	for(i in 1:nrow(adj))
-		adj <- adj %*% adj + adj
-	adj[adj != 0] <- 1
+		adj = adj %*% adj + adj
+	adj[adj != 0] = 1
 	adj
 }
 

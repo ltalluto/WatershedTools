@@ -1,37 +1,32 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 1.6.4
+Version: 1.7.0
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
            role = c("aut", "cre"),
            email = "mtalluto@gmail.com")
-Description: This is a wrapper around various GRASS GIS 7.4 functions for conducting watershed analyses. An installation of GRASS is required prior to using this package.
+Description: This is a companion to the watershed package, focused on topological analysis. The main difference is that the watershed package depends on GRASS GIS to delineate the streams. This package performs analyses on the output of watershed, without any dependence on GRASS.
 License: MIT + file "Licence"
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 3.5.0),
+    R (>= 4.0),
     Matrix,
     sp
 Imports:
     rgrass7,
-    raster (>= 3.3.8),
-    deSolve,
     Rcpp,
     ggplot2,
     reshape2,
     sf (>= 0.9),
+    watershed (>= 0.4)
 Suggests: 
-    watershed (>= 0.3.5),
     testthat (>= 2.1.0),
     maptools,
     rgeos,
-    rstanarm,
     viridisLite,
     RColorBrewer
-SystemRequirements:
-	GRASS GIS 7.4
 RoxygenNote: 7.1.2
 LinkingTo: 
     Rcpp

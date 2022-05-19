@@ -17,5 +17,5 @@ subcatchment = function(ws, x) {
 	wsobj = list(data = dat, adjacency = adj)
 	class(wsobj) = class(ws)
 	
-	.rebuild_reach_topology(wsobj)
+	.rebuild_reaches(wsobj)
 }

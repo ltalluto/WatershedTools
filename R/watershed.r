@@ -42,11 +42,7 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	wsobj <- list(data = allSPDF, adjacency = adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
 	
-	radj_x = raster::stack(allRasters$accumulation, allRasters$drainage, allRasters$reachID, 
-		allRasters$catchmentArea, allRasters$id)
-	names(radj_x) = c("accum", "drainage", "stream", "catchment", "id")
-	wsobj$reach_adjacency = Matrix::t(watershed::reach_topology(radj_x, Matrix::t(adjacency)))
-	wsobj$reach_connectivity = .create_reach_connectivity(wsobj, self = FALSE)
+	wsobj = .rebuild_reaches(wsobj)
 		
 	attr(wsobj, "version") <- packageVersion("WatershedTools")
 	return(wsobj)
@@ -54,43 +50,19 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 
 
 
-# #' Compute connectivity matrix
-# #'
-# #' @param drainage Drainage direction raster
-# #' @param stream Stream network raster; see `details`
-# #'
-# #' @details The stream network raster should be NA in all cells not considered a part of the
-# #'		river network. The pixel values of the raster must be unique IDs representing individual
-# #'		stream reaches to model. At present, the only supported reach size is a single pixel, thus
-# #'		each pixel must have a unique value.
-# #' @return A list with two elements, the first containing corrected drainage directions, the 
-# #' 		second with A [Matrix::sparseMatrix()] representation of the river network. For a `stream` 
-# #' 		input raster with `n` non-NA cells, the dimensions of this matrix will be n by n. Dimnames
-# #'		of the matrix will be the pixel IDs from the `stream` input raster. Values of the
-# #'		matrix cells are either 0 or 1; a zero indicates no flow, a one in cell i,j indicates
-# #'		that reach `i` receives water from reach `j`.
-# #' @keywords internal
-# WSConnectivity <- function(drainage, stream) {
-# 	ids <- raster::values(stream)
-# 	inds <- which(!is.na(ids))
-# 	ids <- ids[inds]
-# 	if(any(duplicated(ids)))
-# 		stop("Stream IDs must be all unique")
-# 
-# 	rowMat <- matrix(1:raster::nrow(drainage), nrow=raster::nrow(drainage), 
-# 		ncol=raster::ncol(drainage))
-# 	colMat <- matrix(1:raster::ncol(drainage), nrow=raster::nrow(drainage), 
-# 		ncol=raster::ncol(drainage), byrow=TRUE)
-# 	coordRas <- raster::stack(list(x = raster::raster(colMat, template = drainage), 
-# 		y = raster::raster(rowMat, template = drainage), drainage = drainage, id = stream))
-# 	coordRas <- raster::mask(coordRas, stream)
-# 
-# 	xy <- WSFlowTo(coordRas[inds])
-# 	res <- xy[,c('fromID', 'drainage')]
-# 	colnames(res)[1] <- 'id'
-# 	list(drainage = res, adjacency = Matrix::sparseMatrix(xy[,'toID'], xy[,'fromID'], 
-# 		dims=rep(length(inds), 2), dimnames = list(ids, ids), x = 1))
-# }
+#' Convert a Watershed back to a watershed-style stack
+#' @param ws A watershed
+#' @return A raster stack following the format from the watershed package
+#' @keywords internal
+.make_ws_stack = function(ws) {
+	crs = sp::proj4string(ws$data)
+	co = coordinates(ws$data)
+	val = raster::stack(raster::rasterFromXYZ(cbind(coordinates(ws$data), 
+		ws$data$accumulation, ws$data$drainage, ws$data$reachID, ws$data$catchmentArea, ws$data$id)))
+	names(val) = c('accum', 'drainage', 'stream', 'catchment', 'id')
+	val
+}
+
 
 
 
