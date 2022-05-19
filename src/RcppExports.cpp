@@ -5,24 +5,11 @@
 
 using namespace Rcpp;
 
-// dCdt_transport_cpp
-NumericVector dCdt_transport_cpp(double t, NumericVector y, NumericMatrix adjacencyQ, NumericVector qout, NumericVector qin, NumericVector lateral, NumericVector csArea, NumericVector dx);
-RcppExport SEXP _WatershedTools_dCdt_transport_cpp(SEXP tSEXP, SEXP ySEXP, SEXP adjacencyQSEXP, SEXP qoutSEXP, SEXP qinSEXP, SEXP lateralSEXP, SEXP csAreaSEXP, SEXP dxSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type t(tSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type adjacencyQ(adjacencyQSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type qout(qoutSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type qin(qinSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type lateral(lateralSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type csArea(csAreaSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type dx(dxSEXP);
-    rcpp_result_gen = Rcpp::wrap(dCdt_transport_cpp(t, y, adjacencyQ, qout, qin, lateral, csArea, dx));
-    return rcpp_result_gen;
-END_RCPP
-}
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // connectCPP
 List connectCPP(NumericVector dsPixel, int upstream, int downstream, NumericVector value);
 RcppExport SEXP _WatershedTools_connectCPP(SEXP dsPixelSEXP, SEXP upstreamSEXP, SEXP downstreamSEXP, SEXP valueSEXP) {
@@ -53,7 +40,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_WatershedTools_dCdt_transport_cpp", (DL_FUNC) &_WatershedTools_dCdt_transport_cpp, 8},
     {"_WatershedTools_connectCPP", (DL_FUNC) &_WatershedTools_connectCPP, 4},
     {"_WatershedTools_dmat", (DL_FUNC) &_WatershedTools_dmat, 4},
     {NULL, NULL, 0}
