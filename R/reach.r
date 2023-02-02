@@ -52,8 +52,10 @@ trim_reaches = function(ws, size, rebuild = TRUE) {
 	}
 
 	# make the topology & connectivity matrices
-	ws_st = .make_ws_stack(x)
-	x$reach_adjacency = Matrix::t(watershed::reach_topology(ws_st, Matrix::t(x$adjacency)))
+	ws_st = terra::rast(.make_ws_stack(x))
+	Tp = Matrix::t(x$adjacency)
+	Tr = watershed::reach_topology(ws_st, Tp)
+	x$reach_adjacency = Matrix::t(Tr)
 	x$reach_connectivity = .create_reach_connectivity(x, self = FALSE)
 
 	x

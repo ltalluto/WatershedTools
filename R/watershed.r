@@ -4,12 +4,13 @@
 #' @param elevation Optional elevation raster
 #' @param accumulation Optional flow accumulation raster
 #' @param catchmentArea Optional catchment area raster
-#' @param otherLayers RasterStack of other data layers to add to the Watershed object
+#' @param otherLayers Multiband raster of other data layers to add to the Watershed object
+#' @param Tp A topology from watershed, will be computed if missing
 #' @details All raster maps will be cropped to the stream network. The values in `stream` will
 #' 		be automatically assigned to a reachID field in the Watershed object.
 #' @return A watershed object
 #' @export
-Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, otherLayers) {
+Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, otherLayers, Tp) {
 	dataRasters =list()
 	if(!missing(drainage)) dataRasters$drainage = drainage
 	if(!missing(elevation)) dataRasters$elevation = elevation
@@ -17,33 +18,34 @@ Watershed <- function(stream, drainage, elevation, accumulation, catchmentArea, 
 	if(!missing(catchmentArea)) dataRasters$catchmentArea = catchmentArea
 	if(!missing(otherLayers)) dataRasters$otherLayers = otherLayers
 	layerStack =lapply(dataRasters, function(x) {
-		if(!raster::compareRaster(stream, x, stopiffalse = FALSE))
-			x =raster::crop(x, stream)
-		raster::mask(x, stream)
+		if(!terra::compareGeom(stream, x, stopiffalse = FALSE))
+			x =terra::crop(x, stream)
+		terra::mask(x, stream)
 	})
 
 	## create pixel IDs and add other layers, if present
-	allRasters = raster::stack(stream, stream)
-	names(allRasters) = c('reachID', 'id')
-	if(length(layerStack) > 0) {
-		layerStack = raster::stack(layerStack)
-		allRasters = raster::addLayer(allRasters, layerStack)
-	}
-	maskIndices = which(!is.na(raster::values(stream)))
+	nms = names(layerStack)
+	layerStack = c(list(stream, stream), layerStack)
+	allRasters = terra::rast(layerStack)
+	names(allRasters) = c('reachID', 'id', nms)
+	maskIndices = which(!is.na(terra::values(stream)))
 	allRasters$id[maskIndices] = 1:length(maskIndices)
-
-	allSPDF = as(allRasters, "SpatialPixelsDataFrame")
+	
+	allSPDF = terra::as.data.frame(allRasters, xy = TRUE)
+	sp::coordinates(allSPDF) = c('x', 'y')
+	allSPDF = as(allSPDF, "SpatialPixelsDataFrame")
 	allSPDF = allSPDF[complete.cases(allSPDF@data),]
-	adjacency = Matrix::t(watershed::pixel_topology(drainage = allRasters$drainage, 
-		stream = allRasters$reachID, id = allRasters$id))
-	allSPDF$length = WSComputeLength(allSPDF$drainage, raster::res(drainage))
+	if(missing(Tp))
+		Tp = watershed::pixel_topology(drainage = allRasters$drainage, stream = allRasters$reachID, id = allRasters$id)
+	adjacency = Matrix::t(Tp)
+	allSPDF$length = WSComputeLength(allSPDF$drainage, terra::res(drainage))
 	allSPDF$vReachNumber <- allSPDF$reachID
 
 	wsobj <- list(data = allSPDF, adjacency = adjacency)
 	class(wsobj) <- c("Watershed", class(wsobj))
-	
+
 	wsobj = .rebuild_reaches(wsobj)
-		
+
 	attr(wsobj, "version") <- packageVersion("WatershedTools")
 	return(wsobj)
 }

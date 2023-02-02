@@ -1,6 +1,6 @@
 Package: WatershedTools
 Title: Tools for watershed analysis
-Version: 1.7.1
+Version: 1.7.1.9000
 Authors@R: 
     person(given = "Matthew",
            family = "Talluto",
@@ -15,12 +15,13 @@ Depends:
     Matrix,
     sp
 Imports:
-    rgrass7,
+    rgrass,
     Rcpp,
     ggplot2,
     reshape2,
     sf (>= 0.9),
-    watershed (>= 0.4)
+    watershed (>= 0.4),
+    terra
 Suggests: 
     testthat (>= 2.1.0),
     maptools,
